@@ -1,0 +1,82 @@
+Analyzing submitted data for OKUM
+========================================================
+
+This is an R Markdown document.
+
+Importing the data and assigning factors
+--------------------------------------
+```{r}
+library(ggplot2)
+library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
+OKUM <- read.csv("C:/Daten/projects/IAG/Certification Committee/Reference materials/OKUM and MUH-1/OKUM calulcations/OKUM.csv", sep=";")
+OKUM.methods <- read.csv("C:/Daten/projects/IAG/Certification Committee/Reference materials/OKUM and MUH-1/OKUM calulcations/OKUM methods.csv", sep=";")
+OKUM <- merge(OKUM, OKUM.methods) # merging OKUM and OKUM.methods
+OKUM$Lab <- as.factor(OKUM$Lab)
+OKUM$Packet <- as.factor(OKUM$Packet)
+OKUM$Prep <- as.factor(OKUM$Prep)
+OKUM$day <- as.factor(OKUM$day)
+OKUM$names <- as.factor(OKUM$names)
+```
+defining the plotting theme
+-------------------------------
+```{r}
+mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size = rel(2))) + theme(axis.title.x = element_text(size = rel(1.8)))+ theme(axis.title.y = element_text(size = rel(1.8))) +theme(axis.text.x = element_text(size = rel(1.5))) + theme(axis.text.y = element_text(size = rel(1.5))) + theme(legend.title = element_text(size = rel(1))) +theme(legend.text = element_text(size = rel(0.8)))
+```
+defining the function for plotting methods vs. measurand mass fraction. Sample preparation methods are also marked in the plot.
+-----------------------
+```{r}
+##### function plot_method defined here. Automated plot of methods boxplots sorted by increasing method mean. Enter with plot_method=('xx') #######
+plot_method <- function(x) {
+  element <- x
+  '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
+  prep <-  'Prep.'
+  method <- 'Method.'
+  anal.prep <- prep %p% element
+  anal.method <- method %p% element
+  anal <- OKUM[[element]]
+  anal.prep <- OKUM[[anal.prep]]
+  anal.method <- OKUM[[anal.method]]
+  analyte <- data.frame(OKUM$Lab, OKUM$names, anal, anal.prep, anal.method )
+  analyte <- na.omit(analyte)
+  p <- ggplot(order_by(anal.method, ~anal, analyte, mean), aes(anal.method, anal)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(colour=anal.prep), size = 4.5, position = position_jitter(width = .2))
+  p + xlab("method") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + mytheme
+}
+```
+```{r}
+###### function plot_lab #### 
+# defined here. Automated plot of lab boxplots sorted by increasing lab mean and Horwitz function. Enter with plot_lab=('xx')
+plot_lab <- function(x, type) {
+  element <- x
+  '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
+  prep <-  'Prep.'
+  method <- 'Method.'
+  anal.prep <- prep %p% element
+  anal.method <- method %p% element
+  anal <- OKUM[[element]]
+  anal.prep <- OKUM[[anal.prep]]
+  anal.method <- OKUM[[anal.method]]
+  analyte <- data.frame(OKUM$Lab, OKUM$names, anal, anal.prep, anal.method )
+  analyte <- na.omit(analyte)
+  avg <- median(tapply(analyte$anal, analyte$OKUM.Lab, mean, na.rm=TRUE), na.rm=TRUE)
+  switch(type, 
+         M = hor <- 1*(0.01*avg)^0.8495, 
+         T = hor <- 10000*1*(0.01*avg/10000)^0.8495)
+  # hor <- 1*(0.01*avg)^0.8495
+  u.hor <- avg + hor
+  u.2hor <- avg + 2*hor
+  l.hor <- avg - hor
+  l.2hor <- avg - 2*hor
+  p <- ggplot(order_by(OKUM.Lab, ~anal, analyte, mean), aes(OKUM.Lab, anal)) + geom_abline(intercept = avg, slope = 0) + geom_abline(intercept = u.2hor, slope = 0, linetype ="dotted") + geom_abline(intercept = l.2hor, slope = 0, linetype = "dotted") + geom_abline(intercept = u.hor, slope = 0, linetype ="dashed") + geom_abline(intercept = l.hor, slope = 0, linetype = "dashed")
+  p <- p + geom_boxplot(aes(fill=anal.method)) + geom_point(size=4) + geom_point(aes(colour=anal.prep), size = 3.5) 
+  p + xlab("lab") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + geom_smooth(aes(group=1)) + mytheme
+}
+
+```
+```{r}
+summary(OKUM$SiO2, na.rm=TRUE, digits=4)
+```
+
+
+```{r fig.width=10, fig.height=6}
+plot_method('SiO2'); plot_lab('SiO2','M')
+```
