@@ -118,10 +118,36 @@ plot_youd <- function(a, y, z) { # a = measurand, y and z ref
 }
 
 ```
+```{r}
+avgbymethod <- function(x) {
+  element <- x
+  '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
+  prep <-  'Prep.'
+  method <- 'Method.'
+  anal.prep <- prep %p% element
+  anal.method <- method %p% element
+  anal <- GOM[[element]]
+  anal.prep <- GOM[[anal.prep]]
+  anal.method <- GOM[[anal.method]]
+  analyte <- data.frame(GOM$Lab, GOM$names, anal, anal.prep, anal.method )
+  analyte <- na.omit(analyte)
+  bymethod <- tapply(analyte$anal, analyte$anal.method, mean, na.rm=TRUE)
+  print(bymethod)
+  avg <- mean(tapply(analyte$anal, analyte$GOM.Lab, mean, na.rm=TRUE), na.rm=TRUE)
+  median <- median(tapply(analyte$anal, analyte$GOM.Lab, median, na.rm=TRUE), na.rm=TRUE)
+  cat("mean of lab means: ","\n")
+  cat(round(avg,3),"g/100g", "\n")
+  cat("median of lab medians: ","\n")
+  cat(round(median,3),"g/100g", "\n")
+}
+```
 
 
 ```{r}
 summary(GOM$SiO2, na.rm=TRUE, digits=4)
+```
+```{r}
+avgbymethod('SiO2')
 ```
 
 
@@ -140,4 +166,6 @@ GOM$SiO2 <- ifelse(GOM$Lab==16, NA, GOM$SiO2)
 summary(GOM$SiO2, na.rm=TRUE, digits=4)
 plot_lab('SiO2', 'M')
 ```
-
+```{r}
+avgbymethod('SiO2')
+```
