@@ -1,13 +1,20 @@
 Analyzing submitted data for OKUM
 ========================================================
 
-This is an R Markdown document.
-
-Importing the data and assigning factors
---------------------------------------
 ```{r}
+measurand <- 'CaO'
+```
+
+## measurand selected `r measurand`
+
+
+#### Importing the data and assigning factors
+
+```{r results='hide'}
 library(ggplot2)
+library(devtools) #needed for "order_by"
 library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
+library(metRology) #for mandel k and h calculations
 
 GAS <- read.csv("~/GitHub/certification/GAS.csv", sep=";")
 OKUM <- read.csv("~/GitHub/certification/OKUM.csv", sep=";")
@@ -21,16 +28,17 @@ GOM$Packet <- as.factor(GOM$Packet)
 GOM$Prep <- as.factor(GOM$Prep)
 GOM$day <- as.factor(GOM$day)
 GOM$names <- as.factor(GOM$names)
-```
 GOMorig <- GOM  #keeping the original file
+```
 
-defining the plotting theme
--------------------------------
+#### defining the plotting theme
+
 ```{r}
 mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size = rel(2))) + theme(axis.title.x = element_text(size = rel(1.8)))+ theme(axis.title.y = element_text(size = rel(1.8))) +theme(axis.text.x = element_text(size = rel(1.5))) + theme(axis.text.y = element_text(size = rel(1.5))) + theme(legend.title = element_text(size = rel(1))) +theme(legend.text = element_text(size = rel(0.8)))
 ```
-defining the function for plotting methods vs. measurand mass fraction. Sample preparation methods are also marked in the plot.
------------------------
+
+
+#### defining the function for plotting methods vs. measurand mass fraction. Sample preparation methods are also marked in the plot.
 ```{r}
 ##### function plot_method defined here. Automated plot of methods boxplots sorted by increasing method mean. Enter with plot_method=('xx') #######
 plot_method <- function(x) {
@@ -132,40 +140,65 @@ avgbymethod <- function(x) {
   analyte <- data.frame(GOM$Lab, GOM$names, anal, anal.prep, anal.method )
   analyte <- na.omit(analyte)
   bymethod <- tapply(analyte$anal, analyte$anal.method, mean, na.rm=TRUE)
+  cat("method means", "\n")
   print(bymethod)
   avg <- mean(tapply(analyte$anal, analyte$GOM.Lab, mean, na.rm=TRUE), na.rm=TRUE)
   median <- median(tapply(analyte$anal, analyte$GOM.Lab, median, na.rm=TRUE), na.rm=TRUE)
-  cat("mean of lab means: ","\n")
-  cat(round(avg,3),"g/100g", "\n")
-  cat("median of lab medians: ","\n")
-  cat(round(median,3),"g/100g", "\n")
+  # cat("mean of lab means: ","\n")
+  # cat(round(avg,3),"g/100g", "\n")
+  # cat("median of lab medians: ","\n")
+  # cat(round(median,3),"g/100g", "\n")
 }
 ```
-
+```{r}
+summary(GOM[[measurand]], na.rm=TRUE, digits=4)
+mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm=TRUE), na.rm=TRUE)
+median <- median(tapply(GOM[[measurand]], GOM$Lab, median, na.rm=TRUE), na.rm=TRUE)
+```
+The `r measurand` mean of the Lab means is `r round(mean, 4)` g/100 g  
+The `r measurand` median of the Lab medians is `r round(median, 4)` g/100 g  
 
 ```{r}
-summary(GOM$SiO2, na.rm=TRUE, digits=4)
-```
-```{r}
-avgbymethod('SiO2')
+avgbymethod(measurand)
 ```
 
 
-```{r fig.width=10, fig.height=6}
-plot_method('SiO2'); plot_lab('SiO2','M')
+```{r fig.width=10, fig.height=4}
+plot_method(measurand); plot_lab(measurand,'M')
 ```
 ```{r fig.width=6, fig.height=6}
-plot_youd('SiO2', 'GAS', 'OKUM')
+plot_youd(measurand, 'GAS', 'OKUM'); plot_youd(measurand, 'MUH', 'OKUM')
 ```
-Removing ouliers lab #16 based on Youden plot
--------------------------
-
-
+#### Mandel k barplot displays the within lab performance relative to all participating labs
 ```{r fig.width=10, fig.height=6}
-GOM$SiO2 <- ifelse(GOM$Lab==16, NA, GOM$SiO2)
-summary(GOM$SiO2, na.rm=TRUE, digits=4)
-plot_lab('SiO2', 'M')
+k <- with(GOM, mandel.kh(GOM[[measurand]], g=Lab, type="k"))     
+barplot(k, las=2, col=1:4)
+```
+
+
+#### Removing ouliers lab based on Youden plot
+
+```{r outlier removal, fig.width=10, fig.height=6}
+outlier <- c(30, 12, 7, 16)
+leng <- length(outlier)
+for(i in 1:leng)
+{
+  GOM[[measurand]] <- ifelse(GOM$Lab==outlier[i], NA, GOM[[measurand]])
+  message("Lab ", outlier[i], " was removed")
+  print(summary(GOM[[measurand]], na.rm=TRUE, digits=4))
+  }
+plot_lab(measurand, 'M')
+#GOM[[measurand]] <- ifelse(GOM$Lab==remove[2], NA, GOM[[measurand]])
+#summary(GOM[[measurand]], na.rm=TRUE, digits=4)
+#plot_lab(measurand, 'M')
 ```
 ```{r}
-avgbymethod('SiO2')
+avgbymethod(measurand)
 ```
+```{r}
+summary(GOM[[measurand]], na.rm=TRUE, digits=4)
+mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm=TRUE), na.rm=TRUE)
+median <- median(tapply(GOM[[measurand]], GOM$Lab, median, na.rm=TRUE), na.rm=TRUE)
+```
+The `r measurand` mean of the Lab means after outlier removal is `r round(mean, 4)` g/100 g  
+The `r measurand` median of the Lab medians after outlier removal is `r round(median, 4)` g/100 g 
