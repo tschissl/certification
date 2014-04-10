@@ -2,7 +2,7 @@ Analyzing submitted data for OKUM
 ========================================================
 
 ```{r}
-measurand <- 'CaO'
+measurand <- 'TiO2'
 ```
 
 ## measurand selected `r measurand`
@@ -12,7 +12,8 @@ measurand <- 'CaO'
 
 ```{r results='hide'}
 library(ggplot2)
-library(devtools) #needed for "order_by"
+# library(devtools) #needed for "order_by"
+# install_github("plotflow", "trinker")
 library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
 library(metRology) #for mandel k and h calculations
 
@@ -53,7 +54,7 @@ plot_method <- function(x) {
   anal.method <- GOM[[anal.method]]
   analyte <- data.frame(GOM$Lab, GOM$names, anal, anal.prep, anal.method )
   analyte <- na.omit(analyte)
-  p <- ggplot(order_by(anal.method, ~anal, analyte, mean), aes(anal.method, anal)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(colour=anal.prep), size = 4.5, position = position_jitter(width = .2))
+  p <- ggplot(reorder_by(anal.method, ~anal, analyte, mean), aes(anal.method, anal)) + geom_boxplot(outlier.shape = NA) + geom_jitter(aes(colour=anal.prep), size = 4.5, position = position_jitter(width = .2))
   p + xlab("method") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + mytheme
 }
 ```
@@ -81,7 +82,7 @@ plot_lab <- function(x, type) {
   u.2hor <- avg + 2*hor
   l.hor <- avg - hor
   l.2hor <- avg - 2*hor
-  p <- ggplot(order_by(GOM.Lab, ~anal, analyte, mean), aes(GOM.Lab, anal)) + geom_abline(intercept = avg, slope = 0) + geom_abline(intercept = u.2hor, slope = 0, linetype ="dotted") + geom_abline(intercept = l.2hor, slope = 0, linetype = "dotted") + geom_abline(intercept = u.hor, slope = 0, linetype ="dashed") + geom_abline(intercept = l.hor, slope = 0, linetype = "dashed")
+  p <- ggplot(reorder_by(GOM.Lab, ~anal, analyte, mean), aes(GOM.Lab, anal)) + geom_abline(intercept = avg, slope = 0) + geom_abline(intercept = u.2hor, slope = 0, linetype ="dotted") + geom_abline(intercept = l.2hor, slope = 0, linetype = "dotted") + geom_abline(intercept = u.hor, slope = 0, linetype ="dashed") + geom_abline(intercept = l.hor, slope = 0, linetype = "dashed")
   p <- p + geom_boxplot(aes(fill=anal.method)) + geom_point(size=4) + geom_point(aes(colour=anal.prep), size = 3.5) 
   p + xlab("lab") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + geom_smooth(aes(group=1)) + mytheme
 }
