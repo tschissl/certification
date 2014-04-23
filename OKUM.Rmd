@@ -2,7 +2,7 @@ Analyzing submitted data for OKUM
 ========================================================
 
 ```{r}
-measurand <- 'TiO2'
+measurand <- 'SiO2'
 ```
 
 ## measurand selected `r measurand`
@@ -37,11 +37,27 @@ GOMorig <- GOM  #keeping the original file
 ```{r}
 mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size = rel(2))) + theme(axis.title.x = element_text(size = rel(1.8)))+ theme(axis.title.y = element_text(size = rel(1.8))) +theme(axis.text.x = element_text(size = rel(1.5))) + theme(axis.text.y = element_text(size = rel(1.5))) + theme(legend.title = element_text(size = rel(1))) +theme(legend.text = element_text(size = rel(0.8)))
 ```
+#### initial calculations with complete data set
 
-
+```{r creating means}
+## means over packets within lab 
+require(plyr)
+meanGOM <- function(x) mean(x, na.rm=TRUE)
+meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM))
+## median over median of packets within lab
+GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
+```
+```{r creating median}
+## median over packets within lab 
+require(plyr)
+medianGOM <- function(x) median(x, na.rm=TRUE)
+medianGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
+## median over median of packets within lab
+GOM.median <- ddply(medianGOM.packet, c("Lab"), numcolwise(medianGOM))
+```
 #### defining the function for plotting methods vs. measurand mass fraction. Sample preparation methods are also marked in the plot.
-```{r}
-##### function plot_method defined here. Automated plot of methods boxplots sorted by increasing method mean. Enter with plot_method=('xx') #######
+```{r plot_method function plotting measurand vs. method}
+### function plot_method defined here. Automated plot of methods boxplots sorted by increasing method mean. Enter with plot_method=('xx') #######
 plot_method <- function(x) {
   element <- x
   '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
@@ -58,7 +74,7 @@ plot_method <- function(x) {
   p + xlab("method") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + mytheme
 }
 ```
-```{r}
+```{r plot_lab function plot measurand vs. lab}
 ###### function plot_lab #### 
 # defined here. Automated plot of lab boxplots sorted by increasing lab mean and Horwitz function. Enter with plot_lab=('xx')
 plot_lab <- function(x, type) {
@@ -87,7 +103,7 @@ plot_lab <- function(x, type) {
   p + xlab("lab") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + geom_smooth(aes(group=1)) + mytheme
 }
 ```
-```{r}
+```{r plot_youd functin for youden plot}
 plot_youd <- function(a, y, z) { # a = measurand, y and z ref
   '%p%' <- function(a, b) {as.character(paste (a, b, sep =""))}
   switch(
@@ -127,7 +143,7 @@ plot_youd <- function(a, y, z) { # a = measurand, y and z ref
 }
 
 ```
-```{r}
+```{r function calculating mean and median for individual measurand}
 avgbymethod <- function(x) {
   element <- x
   '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
@@ -151,47 +167,42 @@ avgbymethod <- function(x) {
   # cat(round(median,3),"g/100g", "\n")
 }
 ```
-```{r}
+```{r summary as is for indiviual measurand}
 summary(GOM[[measurand]], na.rm=TRUE, digits=4)
-mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm=TRUE), na.rm=TRUE)
-median <- median(tapply(GOM[[measurand]], GOM$Lab, median, na.rm=TRUE), na.rm=TRUE)
+mean.before <- mean(GOM.mean[[measurand]], na.rm=TRUE)
+median.before <- median(GOM.median[[measurand]], na.rm=TRUE)
 ```
-The `r measurand` mean of the Lab means is `r round(mean, 4)` g/100 g  
-The `r measurand` median of the Lab medians is `r round(median, 4)` g/100 g  
+The `r measurand` mean of the Lab means is `r round(mean.before, 4)` g/100 g  
+The `r measurand` median of the Lab+Package medians is `r round(median.before, 4)` g/100 g  
 
-```{r}
+```{r method averages as is}
 avgbymethod(measurand)
 ```
 
-
-```{r fig.width=10, fig.height=4}
+```{r methods and lab plot as is, fig.width=10, fig.height=4}
 plot_method(measurand); plot_lab(measurand,'M')
 ```
 ```{r fig.width=6, fig.height=6}
 plot_youd(measurand, 'GAS', 'OKUM'); plot_youd(measurand, 'MUH', 'OKUM')
 ```
-#### Mandel k barplot displays the within lab performance relative to all participating labs
-```{r fig.width=10, fig.height=6}
-k <- with(GOM, mandel.kh(GOM[[measurand]], g=Lab, type="k"))     
+#### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
+```{r mandel k, fig.width=10, fig.height=6}
+k <- with(medianGOM.packet, mandel.kh(medianGOM.packet[[measurand]], g=Lab, type="k"))     
 barplot(k, las=2, col=1:4)
 ```
-
 
 #### Removing ouliers lab based on Youden plot
 
 ```{r outlier removal, fig.width=10, fig.height=6}
-outlier <- c(30, 12, 7, 16)
-leng <- length(outlier)
-for(i in 1:leng)
+outlier <- c(16) ## defining the outlying lab here with lab#
+leng <- length(outlier) ## counting the number of outliers for loop
+for(i in 1:leng) ##  looping
 {
-  GOM[[measurand]] <- ifelse(GOM$Lab==outlier[i], NA, GOM[[measurand]])
+  GOM[[measurand]] <- ifelse(GOM$Lab==outlier[i], NA, GOM[[measurand]]) ## replacing values of outlying lab with "NA" and defining new GOM
   message("Lab ", outlier[i], " was removed")
   print(summary(GOM[[measurand]], na.rm=TRUE, digits=4))
   }
-plot_lab(measurand, 'M')
-#GOM[[measurand]] <- ifelse(GOM$Lab==remove[2], NA, GOM[[measurand]])
-#summary(GOM[[measurand]], na.rm=TRUE, digits=4)
-#plot_lab(measurand, 'M')
+plot_lab(measurand, 'M') # replotting without outlier
 ```
 ```{r}
 avgbymethod(measurand)
@@ -199,7 +210,12 @@ avgbymethod(measurand)
 ```{r}
 summary(GOM[[measurand]], na.rm=TRUE, digits=4)
 mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm=TRUE), na.rm=TRUE)
-median <- median(tapply(GOM[[measurand]], GOM$Lab, median, na.rm=TRUE), na.rm=TRUE)
+median.before <- median(GOM.median[[measurand]], na.rm=TRUE)
+medianGOM.packet.after <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
+## median over median of packets within lab
+GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM))
+median.after <- median(GOM.median.after[[measurand]], na.rm=TRUE)
 ```
-The `r measurand` mean of the Lab means after outlier removal is `r round(mean, 4)` g/100 g  
-The `r measurand` median of the Lab medians after outlier removal is `r round(median, 4)` g/100 g 
+The `r measurand` median of the Lab+packet medians without outlier removal is `r round(median.before, 4)` g/100 g  
+The `r measurand` mean of the Lab means after outlier removal of lab # `r outlier` is `r round(mean, 4)` g/100 g  
+The `r measurand` median of the Lab+packet medians after outlier removal is `r round(median.after, 4)` g/100 g  
