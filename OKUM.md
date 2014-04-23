@@ -3,11 +3,11 @@ Analyzing submitted data for OKUM
 
 
 ```r
-measurand <- "SiO2"
+measurand <- "Fe2O3T"
 ```
 
 
-## measurand selected SiO2
+## measurand selected Fe2O3T
 
 
 #### Importing the data and assigning factors
@@ -234,7 +234,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##   42.95   44.00   44.18   44.34   44.40   50.40     162
+##   11.25   11.74   11.82   11.97   11.90   16.00     138
 ```
 
 ```r
@@ -242,8 +242,8 @@ mean.before <- mean(GOM.mean[[measurand]], na.rm = TRUE)
 median.before <- median(GOM.median[[measurand]], na.rm = TRUE)
 ```
 
-The SiO2 mean of the Lab means is 44.3327 g/100 g  
-The SiO2 median of the Lab+Package medians is 44.1638 g/100 g  
+The Fe2O3T mean of the Lab means is 11.9695 g/100 g  
+The Fe2O3T median of the Lab+Package medians is 11.8286 g/100 g  
 
 
 ```r
@@ -252,8 +252,8 @@ avgbymethod(measurand)
 
 ```
 ## method means 
-##            gravimetry    ICP-AES        XRF 
-##         NA      44.04      46.53      44.13
+##             AAS ICP-AES    INAA     XRF 
+##      NA   11.72   11.98   11.83   11.99
 ```
 
 
@@ -263,7 +263,7 @@ plot_method(measurand)
 ```
 
 ```
-## Warning: Removed 12 rows containing missing values (geom_point).
+## Warning: Removed 16 rows containing missing values (geom_point).
 ```
 
 ![plot of chunk methods and lab plot as is](figure/methods_and_lab_plot_as_is1.png) 
@@ -294,6 +294,11 @@ plot_youd(measurand, "GAS", "OKUM")
 plot_youd(measurand, "MUH", "OKUM")
 ```
 
+```
+## Warning: Removed 7 rows containing missing values (geom_point).
+## Warning: Removed 7 rows containing missing values (geom_text).
+```
+
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-42.png) 
 
 #### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
@@ -311,7 +316,7 @@ barplot(k, las = 2, col = 1:4)
 
 
 ```r
-outlier <- c(16) ## defining the outlying lab here with lab#
+outlier <- c(12, 16) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in 1:leng) ##  looping
 {
@@ -322,12 +327,21 @@ for(i in 1:leng) ##  looping
 ```
 
 ```
+## Lab 12 was removed
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##   11.25   11.73   11.81   11.83   11.88   13.00     150
+```
+
+```
 ## Lab 16 was removed
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##   42.95   44.00   44.14   44.15   44.37   45.70     174
+##   11.25   11.73   11.81   11.81   11.87   12.17     162
 ```
 
 ```r
@@ -347,8 +361,8 @@ avgbymethod(measurand)
 
 ```
 ## method means 
-##            gravimetry    ICP-AES        XRF 
-##         NA      44.04      44.54      44.13
+##             AAS ICP-AES    INAA     XRF 
+##      NA   11.72   11.67   11.83   11.82
 ```
 
 
@@ -358,7 +372,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##   42.95   44.00   44.14   44.15   44.37   45.70     174
+##   11.25   11.73   11.81   11.81   11.87   12.17     162
 ```
 
 ```r
@@ -370,6 +384,6 @@ GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM
 median.after <- median(GOM.median.after[[measurand]], na.rm = TRUE)
 ```
 
-The SiO2 median of the Lab+packet medians without outlier removal is 44.1638 g/100 g  
-The SiO2 mean of the Lab means after outlier removal of 16 is 44.1425 g/100 g  
-The SiO2 median of the Lab+packet medians after outlier removal is 44.1444 g/100 g  
+The Fe2O3T median of the Lab+packet medians without outlier removal is 11.8286 g/100 g  
+The Fe2O3T mean of the Lab means after outlier removal of lab # 12, 16 is 11.8098 g/100 g  
+The Fe2O3T median of the Lab+packet medians after outlier removal is 11.8271 g/100 g  
