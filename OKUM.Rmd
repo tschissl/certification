@@ -2,7 +2,7 @@ Analyzing submitted data for OKUM
 ========================================================
 
 ```{r}
-measurand <- 'SiO2'
+measurand <- 'TiO2'
 ```
 
 ## measurand selected `r measurand`
@@ -196,7 +196,7 @@ barplot(k, las=2, col=1:4)
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=10, fig.height=6}
-outlier <- c(1, 16) ## defining the outlying lab here with lab#
+outlier <- c(7, 12, 19, 23) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in 1:leng) ##  looping
 {
