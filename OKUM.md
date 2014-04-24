@@ -3,11 +3,11 @@ Analyzing submitted data for OKUM
 
 
 ```r
-measurand <- "TiO2"
+measurand <- "Al2O3"
 ```
 
 
-## measurand selected TiO2
+## measurand selected Al2O3
 
 
 #### Importing the data and assigning factors
@@ -236,7 +236,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    0.35    0.37    0.38    0.39    0.39    0.46     126
+##    6.18    7.89    7.97    7.90    8.03    8.45     162
 ```
 
 ```r
@@ -244,8 +244,8 @@ mean.before <- mean(GOM.mean[[measurand]], na.rm = TRUE)
 median.before <- median(GOM.median[[measurand]], na.rm = TRUE)
 ```
 
-The TiO2 mean of the Lab means is 0.3858 g/100 g  
-The TiO2 median of the Lab+Package medians is 0.38 g/100 g  
+The Al2O3 mean of the Lab means is 7.9057 g/100 g  
+The Al2O3 median of the Lab+Package medians is 7.975 g/100 g  
 
 
 ```r
@@ -254,8 +254,8 @@ avgbymethod(measurand)
 
 ```
 ## method means 
-##             AAS ICP-AES  ICP-MS     XRF 
-##      NA  0.3775  0.3804  0.3903  0.3862
+##             AAS ICP-AES     XRF 
+##      NA   7.912   7.975   7.895
 ```
 
 
@@ -265,7 +265,7 @@ plot_method(measurand)
 ```
 
 ```
-## Warning: Removed 12 rows containing missing values (geom_point).
+## Warning: Removed 14 rows containing missing values (geom_point).
 ```
 
 ![plot of chunk methods and lab plot as is](figure/methods_and_lab_plot_as_is1.png) 
@@ -285,6 +285,11 @@ plot_lab(measurand, "M")
 plot_youd(measurand, "GAS", "OKUM")
 ```
 
+```
+## Warning: Removed 1 rows containing missing values (geom_point).
+## Warning: Removed 1 rows containing missing values (geom_text).
+```
+
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-41.png) 
 
 ```r
@@ -292,8 +297,8 @@ plot_youd(measurand, "MUH", "OKUM")
 ```
 
 ```
-## Warning: Removed 2 rows containing missing values (geom_point).
-## Warning: Removed 2 rows containing missing values (geom_text).
+## Warning: Removed 5 rows containing missing values (geom_point).
+## Warning: Removed 5 rows containing missing values (geom_text).
 ```
 
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-42.png) 
@@ -313,7 +318,7 @@ barplot(k, las = 2, col = 1:4)
 
 
 ```r
-outlier <- c(7, 12, 19, 23) ## defining the outlying lab here with lab#
+outlier <- c(12, 14) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in 1:leng) ##  looping
 {
@@ -324,39 +329,21 @@ for(i in 1:leng) ##  looping
 ```
 
 ```
-## Lab 7 was removed
-```
-
-```
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    0.35    0.37    0.38    0.39    0.39    0.46     138
-```
-
-```
 ## Lab 12 was removed
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    0.35    0.37    0.38    0.38    0.39    0.45     150
+##    7.54    7.90    7.98    7.97    8.03    8.45     174
 ```
 
 ```
-## Lab 19 was removed
-```
-
-```
-##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    0.35    0.37    0.38    0.38    0.39    0.42     162
-```
-
-```
-## Lab 23 was removed
+## Lab 14 was removed
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    0.35    0.37    0.38    0.38    0.39    0.42     174
+##    7.55    7.91    7.98    7.97    8.03    8.45     186
 ```
 
 ```r
@@ -376,8 +363,8 @@ avgbymethod(measurand)
 
 ```
 ## method means 
-##             AAS ICP-AES  ICP-MS     XRF 
-##      NA      NA  0.3804  0.3685  0.3816
+##             AAS ICP-AES     XRF 
+##      NA   7.912   7.975   7.979
 ```
 
 
@@ -387,7 +374,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    0.35    0.37    0.38    0.38    0.39    0.42     174
+##    7.55    7.91    7.98    7.97    8.03    8.45     186
 ```
 
 ```r
@@ -399,9 +386,9 @@ GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM
 median.after <- median(GOM.median.after[[measurand]], na.rm = TRUE)  # median of measurand after outlier removal
 ```
 
-The TiO2 median of the Lab+packet medians without outlier removal is 0.38 g/100 g  
-The TiO2 mean of the Lab means after outlier removal of lab # 7, 12, 19, 23 is 0.3803 g/100 g  
-The TiO2 median of the Lab+packet medians after outlier removal is 0.379 g/100 g  
+The Al2O3 median of the Lab+packet medians without outlier removal is 7.975 g/100 g  
+The Al2O3 mean of the Lab means after outlier removal of lab # 12, 14 is 7.9769 g/100 g  
+The Al2O3 median of the Lab+packet medians after outlier removal is 7.98 g/100 g  
 
 ## Measurement uncertainty estimations
 
@@ -453,17 +440,17 @@ plot(DF.lme)
 
 ### before outlier rejection
 
-The between-laboratory variance for TiO2 is 4.0248 &times; 10<sup>-4</sup>   
-The between-bottle variance for TiO2 is 6.3813 &times; 10<sup>-6</sup>   
-The repeatability variance for TiO2 is 4.4695 &times; 10<sup>-6</sup>    
-The standard uncertainty for the assigned value of TiO2 is 0.004  
+The between-laboratory variance for Al2O3 is 0.1028   
+The between-bottle variance for Al2O3 is 7.4746 &times; 10<sup>-4</sup>   
+The repeatability variance for Al2O3 is 6.6814 &times; 10<sup>-4</sup>    
+The standard uncertainty for the assigned value of Al2O3 is 0.067  
 
 ### after outlier rejection
-The between-laboratory variance for TiO2 is 1.0059 &times; 10<sup>-4</sup>   
-The between-bottle variance for TiO2 is 3.8318 &times; 10<sup>-6</sup>   
-The repeatability variance for TiO2 is 2.0007 &times; 10<sup>-6</sup>    
-The standard uncertainty for the assigned value of TiO2 is 0.0022  
-The standard uncertainty for the assigned value of TiO2 is 0.0022  
+The between-laboratory variance for Al2O3 is 0.0067   
+The between-bottle variance for Al2O3 is 7.43 &times; 10<sup>-4</sup>   
+The repeatability variance for Al2O3 is 2.6773 &times; 10<sup>-4</sup>    
+The standard uncertainty for the assigned value of Al2O3 is 0.0182  
+The standard uncertainty for the assigned value of Al2O3 is 0.0183  
  
 ### tests for normal distribution
 
@@ -476,7 +463,7 @@ qqline(GOM.median.after[[measurand]])
 
 
 ### final result based on median for assinged value and measurement uncertainty based on variance components
-The TiO2 median of the Lab+packet medians after outlier removal is 0.379 g/100 g   
-The expanded standard uncertainty for the assigned value of TiO2 is 0.0045 
-exluded labs for TiO2 is/are 7, 12, 19, 23  
-labs remaining for calculations 22  
+The Al2O3 median of the Lab+packet medians after outlier removal is 7.98 g/100 g   
+The expanded standard uncertainty for the assigned value of Al2O3 is 0.0381 
+exluded labs for Al2O3 is/are 12, 14  
+labs remaining for calculations 21  
