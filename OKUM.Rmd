@@ -2,7 +2,7 @@ Analyzing submitted data for OKUM
 ========================================================
 
 ```{r}
-measurand <- 'Fe2O3T'
+measurand <- 'SiO2'
 ```
 
 ## measurand selected `r measurand`
@@ -16,6 +16,9 @@ library(ggplot2)
 # install_github("plotflow", "trinker")
 library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
 library(metRology) #for mandel k and h calculations
+library(ape) # needed for varcomp (variance component) extraction
+library(nlme) # needed for lme
+require(plyr)
 
 GAS <- read.csv("~/GitHub/certification/GAS.csv", sep=";")
 OKUM <- read.csv("~/GitHub/certification/OKUM.csv", sep=";")
@@ -41,7 +44,6 @@ mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size
 
 ```{r creating means}
 ## means over packets within lab 
-require(plyr)
 meanGOM <- function(x) mean(x, na.rm=TRUE)
 meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM))
 ## median over median of packets within lab
@@ -191,10 +193,10 @@ k <- with(medianGOM.packet, mandel.kh(medianGOM.packet[[measurand]], g=Lab, type
 barplot(k, las=2, col=1:4)
 ```
 
-#### Removing ouliers lab based on Youden plot
+#### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=10, fig.height=6}
-outlier <- c(12, 16) ## defining the outlying lab here with lab#
+outlier <- c(1, 16) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in 1:leng) ##  looping
 {
@@ -209,13 +211,78 @@ avgbymethod(measurand)
 ```
 ```{r}
 summary(GOM[[measurand]], na.rm=TRUE, digits=4)
-mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm=TRUE), na.rm=TRUE)
-median.before <- median(GOM.median[[measurand]], na.rm=TRUE)
-medianGOM.packet.after <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
+mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm=TRUE), na.rm=TRUE) # mean w/o outlier removal
+median.before <- median(GOM.median[[measurand]], na.rm=TRUE) # median of measurand w/o outlier removal
+medianGOM.packet.after <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM)) # median Lab and Packets after outlier removal
 ## median over median of packets within lab
-GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM))
-median.after <- median(GOM.median.after[[measurand]], na.rm=TRUE)
+GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM)) # median of labs after outlier removal
+median.after <- median(GOM.median.after[[measurand]], na.rm=TRUE) # median of measurand after outlier removal
 ```
 The `r measurand` median of the Lab+packet medians without outlier removal is `r round(median.before, 4)` g/100 g  
 The `r measurand` mean of the Lab means after outlier removal of lab # `r outlier` is `r round(mean, 4)` g/100 g  
 The `r measurand` median of the Lab+packet medians after outlier removal is `r round(median.after, 4)` g/100 g  
+
+## Measurement uncertainty estimations
+
+```{r measurement uncertainty of data before outlier rejection}
+medianGOM.packet$Lab <- as.factor(medianGOM.packet$Lab) # using only the median of the 3 packages per lab
+medianGOM.packet$Packet <- as.factor(medianGOM.packet$Packet)
+anal <- medianGOM.packet[[measurand]]
+DF.lme <- data.frame(medianGOM.packet$Lab, medianGOM.packet$Packet, medianGOM.packet[[measurand]])
+DF.lme <- na.omit(DF.lme)
+names(DF.lme) <- c("Lab", "Packet", "measurand")
+GOM.lme <- lme(measurand ~ 1, random = ~ 1|Lab/Packet, data=DF.lme) # linear model with random effects
+sL2 <- varcomp(GOM.lme, FALSE, FALSE)[[1]] # between-laboratory variance
+sbb2 <- varcomp(GOM.lme, FALSE, FALSE)[[2]] # between bottle standard deviation
+sr2 <- varcomp(GOM.lme, FALSE, FALSE)[[3]] # repeatability standard deviation
+n.p <- dim(DF.lme)[1] # number of obervations
+p <- length(unique(DF.lme$Lab)) # haven't found a better way how to extract the number of labs (number of groups)
+r <- length(unique(DF.lme$Packet))
+u1 <- sqrt(sL2/p+sbb2/p/r+sr2/p/r/4) # calculating the standard uncertainty of characterization
+u2 <- attr(GOM.lme$fixDF,"varFixFact") # gives the same results as u, amazing!
+plot(DF.lme)
+```
+```{r measurement uncertainty of data after outlier rejection}
+medianGOM.packet.after$Lab <- as.factor(medianGOM.packet$Lab) # using only the median of the 3 packages per lab
+medianGOM.packet.after$Packet <- as.factor(medianGOM.packet$Packet)
+anal <- medianGOM.packet.after[[measurand]]
+DF.lme <- data.frame(medianGOM.packet.after$Lab, medianGOM.packet.after$Packet, medianGOM.packet.after[[measurand]])
+DF.lme <- na.omit(DF.lme)
+names(DF.lme) <- c("Lab", "Packet", "measurand")
+GOM.lme <- lme(measurand ~ 1, random = ~ 1|Lab/Packet, data=DF.lme) # linear model with random effects
+sL2.a <- varcomp(GOM.lme, FALSE, FALSE)[[1]] # between-laboratory variance
+sbb2.a <- varcomp(GOM.lme, FALSE, FALSE)[[2]] # between bottle standard deviation
+sr2.a <- varcomp(GOM.lme, FALSE, FALSE)[[3]] # repeatability standard deviation
+n.p <- dim(DF.lme)[1] # number of obervations
+p <- length(unique(DF.lme$Lab)) # haven't found a better way how to extract the number of labs (number of groups)
+r <- length(unique(DF.lme$Packet))
+t.value <- qt(0.975,df=p-1)
+u1.a <- sqrt(sL2.a/p+sbb2.a/p/r+sr2.a/p/r/4) # calculating the standard uncertainty of characterization
+u2.a <- attr(GOM.lme$fixDF,"varFixFact") # gives the same results as u1, amazing!
+plot(DF.lme)
+```
+### before outlier rejection
+
+The between-laboratory variance for `r measurand` is `r sL2`   
+The between-bottle variance for `r measurand` is `r sbb2`   
+The repeatability variance for `r measurand` is `r sr2`    
+The standard uncertainty for the assigned value of `r measurand` is `r u2`  
+
+### after outlier rejection
+The between-laboratory variance for `r measurand` is `r sL2.a`   
+The between-bottle variance for `r measurand` is `r sbb2.a`   
+The repeatability variance for `r measurand` is `r sr2.a`    
+The standard uncertainty for the assigned value of `r measurand` is `r u1.a`  
+The standard uncertainty for the assigned value of `r measurand` is `r u2.a`  
+ 
+### tests for normal distribution
+```{r QQ plot}
+qqnorm(GOM.median.after[[measurand]])
+qqline(GOM.median.after[[measurand]])
+```
+
+### final result based on median for assinged value and measurement uncertainty based on variance components
+The `r measurand` median of the Lab+packet medians after outlier removal is `r round(median.after, 4)` g/100 g   
+The expanded standard uncertainty for the assigned value of `r measurand` is `r u2.a*t.value` 
+exluded labs for `r measurand` is/are `r outlier`  
+labs remaining for calculations `r p`  

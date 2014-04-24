@@ -3,11 +3,11 @@ Analyzing submitted data for OKUM
 
 
 ```r
-measurand <- "Fe2O3T"
+measurand <- "SiO2"
 ```
 
 
-## measurand selected Fe2O3T
+## measurand selected SiO2
 
 
 #### Importing the data and assigning factors
@@ -36,6 +36,16 @@ library(metRology)  #for mandel k and h calculations
 ## Die folgenden Objekte sind maskiert from 'package:base':
 ## 
 ##     cbind, rbind
+```
+
+```r
+library(ape)  # needed for varcomp (variance component) extraction
+library(nlme)  # needed for lme
+require(plyr)
+```
+
+```
+## Loading required package: plyr
 ```
 
 ```r
@@ -72,14 +82,6 @@ mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black",
 
 ```r
 ## means over packets within lab
-require(plyr)
-```
-
-```
-## Loading required package: plyr
-```
-
-```r
 meanGOM <- function(x) mean(x, na.rm = TRUE)
 meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM))
 ## median over median of packets within lab
@@ -234,7 +236,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##   11.25   11.74   11.82   11.97   11.90   16.00     138
+##   42.95   44.00   44.18   44.34   44.40   50.40     162
 ```
 
 ```r
@@ -242,8 +244,8 @@ mean.before <- mean(GOM.mean[[measurand]], na.rm = TRUE)
 median.before <- median(GOM.median[[measurand]], na.rm = TRUE)
 ```
 
-The Fe2O3T mean of the Lab means is 11.9695 g/100 g  
-The Fe2O3T median of the Lab+Package medians is 11.8286 g/100 g  
+The SiO2 mean of the Lab means is 44.3327 g/100 g  
+The SiO2 median of the Lab+Package medians is 44.1638 g/100 g  
 
 
 ```r
@@ -252,8 +254,8 @@ avgbymethod(measurand)
 
 ```
 ## method means 
-##             AAS ICP-AES    INAA     XRF 
-##      NA   11.72   11.98   11.83   11.99
+##            gravimetry    ICP-AES        XRF 
+##         NA      44.04      46.53      44.13
 ```
 
 
@@ -263,7 +265,7 @@ plot_method(measurand)
 ```
 
 ```
-## Warning: Removed 16 rows containing missing values (geom_point).
+## Warning: Removed 12 rows containing missing values (geom_point).
 ```
 
 ![plot of chunk methods and lab plot as is](figure/methods_and_lab_plot_as_is1.png) 
@@ -294,11 +296,6 @@ plot_youd(measurand, "GAS", "OKUM")
 plot_youd(measurand, "MUH", "OKUM")
 ```
 
-```
-## Warning: Removed 7 rows containing missing values (geom_point).
-## Warning: Removed 7 rows containing missing values (geom_text).
-```
-
 ![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-42.png) 
 
 #### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
@@ -312,11 +309,11 @@ barplot(k, las = 2, col = 1:4)
 ![plot of chunk mandel k](figure/mandel_k.png) 
 
 
-#### Removing ouliers lab based on Youden plot
+#### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 
 ```r
-outlier <- c(12, 16) ## defining the outlying lab here with lab#
+outlier <- c(1, 16) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in 1:leng) ##  looping
 {
@@ -327,12 +324,12 @@ for(i in 1:leng) ##  looping
 ```
 
 ```
-## Lab 12 was removed
+## Lab 1 was removed
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##   11.25   11.73   11.81   11.83   11.88   13.00     150
+##   42.95   44.00   44.16   44.33   44.39   50.40     174
 ```
 
 ```
@@ -341,7 +338,7 @@ for(i in 1:leng) ##  looping
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##   11.25   11.73   11.81   11.81   11.87   12.17     162
+##   42.95   44.00   44.14   44.13   44.37   44.86     186
 ```
 
 ```r
@@ -361,8 +358,8 @@ avgbymethod(measurand)
 
 ```
 ## method means 
-##             AAS ICP-AES    INAA     XRF 
-##      NA   11.72   11.67   11.83   11.82
+##            gravimetry    ICP-AES        XRF 
+##         NA      44.04         NA      44.13
 ```
 
 
@@ -372,18 +369,96 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##   11.25   11.73   11.81   11.81   11.87   12.17     162
+##   42.95   44.00   44.14   44.13   44.37   44.86     186
 ```
 
 ```r
-mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm = TRUE), na.rm = TRUE)
-median.before <- median(GOM.median[[measurand]], na.rm = TRUE)
-medianGOM.packet.after <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
+mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm = TRUE), na.rm = TRUE)  # mean w/o outlier removal
+median.before <- median(GOM.median[[measurand]], na.rm = TRUE)  # median of measurand w/o outlier removal
+medianGOM.packet.after <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))  # median Lab and Packets after outlier removal
 ## median over median of packets within lab
-GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM))
-median.after <- median(GOM.median.after[[measurand]], na.rm = TRUE)
+GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM))  # median of labs after outlier removal
+median.after <- median(GOM.median.after[[measurand]], na.rm = TRUE)  # median of measurand after outlier removal
 ```
 
-The Fe2O3T median of the Lab+packet medians without outlier removal is 11.8286 g/100 g  
-The Fe2O3T mean of the Lab means after outlier removal of lab # 12, 16 is 11.8098 g/100 g  
-The Fe2O3T median of the Lab+packet medians after outlier removal is 11.8271 g/100 g  
+The SiO2 median of the Lab+packet medians without outlier removal is 44.1638 g/100 g  
+The SiO2 mean of the Lab means after outlier removal of lab # 1, 16 is 44.1235 g/100 g  
+The SiO2 median of the Lab+packet medians after outlier removal is 44.125 g/100 g  
+
+## Measurement uncertainty estimations
+
+
+```r
+medianGOM.packet$Lab <- as.factor(medianGOM.packet$Lab)  # using only the median of the 3 packages per lab
+medianGOM.packet$Packet <- as.factor(medianGOM.packet$Packet)
+anal <- medianGOM.packet[[measurand]]
+DF.lme <- data.frame(medianGOM.packet$Lab, medianGOM.packet$Packet, medianGOM.packet[[measurand]])
+DF.lme <- na.omit(DF.lme)
+names(DF.lme) <- c("Lab", "Packet", "measurand")
+GOM.lme <- lme(measurand ~ 1, random = ~1 | Lab/Packet, data = DF.lme)  # linear model with random effects
+sL2 <- varcomp(GOM.lme, FALSE, FALSE)[[1]]  # between-laboratory variance
+sbb2 <- varcomp(GOM.lme, FALSE, FALSE)[[2]]  # between bottle standard deviation
+sr2 <- varcomp(GOM.lme, FALSE, FALSE)[[3]]  # repeatability standard deviation
+n.p <- dim(DF.lme)[1]  # number of obervations
+p <- length(unique(DF.lme$Lab))  # haven't found a better way how to extract the number of labs (number of groups)
+r <- length(unique(DF.lme$Packet))
+u1 <- sqrt(sL2/p + sbb2/p/r + sr2/p/r/4)  # calculating the standard uncertainty of characterization
+u2 <- attr(GOM.lme$fixDF, "varFixFact")  # gives the same results as u, amazing!
+plot(DF.lme)
+```
+
+![plot of chunk measurement uncertainty of data before outlier rejection](figure/measurement_uncertainty_of_data_before_outlier_rejection.png) 
+
+
+```r
+medianGOM.packet.after$Lab <- as.factor(medianGOM.packet$Lab)  # using only the median of the 3 packages per lab
+medianGOM.packet.after$Packet <- as.factor(medianGOM.packet$Packet)
+anal <- medianGOM.packet.after[[measurand]]
+DF.lme <- data.frame(medianGOM.packet.after$Lab, medianGOM.packet.after$Packet, 
+    medianGOM.packet.after[[measurand]])
+DF.lme <- na.omit(DF.lme)
+names(DF.lme) <- c("Lab", "Packet", "measurand")
+GOM.lme <- lme(measurand ~ 1, random = ~1 | Lab/Packet, data = DF.lme)  # linear model with random effects
+sL2.a <- varcomp(GOM.lme, FALSE, FALSE)[[1]]  # between-laboratory variance
+sbb2.a <- varcomp(GOM.lme, FALSE, FALSE)[[2]]  # between bottle standard deviation
+sr2.a <- varcomp(GOM.lme, FALSE, FALSE)[[3]]  # repeatability standard deviation
+n.p <- dim(DF.lme)[1]  # number of obervations
+p <- length(unique(DF.lme$Lab))  # haven't found a better way how to extract the number of labs (number of groups)
+r <- length(unique(DF.lme$Packet))
+t.value <- qt(0.975, df = p - 1)
+u1.a <- sqrt(sL2.a/p + sbb2.a/p/r + sr2.a/p/r/4)  # calculating the standard uncertainty of characterization
+u2.a <- attr(GOM.lme$fixDF, "varFixFact")  # gives the same results as u1, amazing!
+plot(DF.lme)
+```
+
+![plot of chunk measurement uncertainty of data after outlier rejection](figure/measurement_uncertainty_of_data_after_outlier_rejection.png) 
+
+### before outlier rejection
+
+The between-laboratory variance for SiO2 is 0.8526   
+The between-bottle variance for SiO2 is 0.0335   
+The repeatability variance for SiO2 is 0.0173    
+The standard uncertainty for the assigned value of SiO2 is 0.1944  
+
+### after outlier rejection
+The between-laboratory variance for SiO2 is 0.09   
+The between-bottle variance for SiO2 is 0.0072   
+The repeatability variance for SiO2 is 0.0029    
+The standard uncertainty for the assigned value of SiO2 is 0.0664  
+The standard uncertainty for the assigned value of SiO2 is 0.0667  
+ 
+
+
+```r
+qqnorm(GOM.median.after[[measurand]])
+qqline(GOM.median.after[[measurand]])
+```
+
+![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7.png) 
+
+
+### final result based on median for assinged value and measurement uncertainty based on variance components
+The SiO2 median of the Lab+packet medians after outlier removal is 44.125 g/100 g   
+The expanded standard uncertainty for the assigned value of SiO2 is 0.1391 
+exluded labs for SiO2 is/are 1, 16  
+labs remaining for calculations 21  
