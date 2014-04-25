@@ -3,11 +3,11 @@ Analyzing submitted data for OKUM
 
 
 ```r
-measurand <- "Al2O3"
+measurand <- "LOI"
 ```
 
 
-## measurand selected Al2O3
+## measurand selected LOI
 
 
 #### Importing the data and assigning factors
@@ -203,40 +203,14 @@ plot_youd <- function(a, y, z) {
 ```
 
 
-```r
-avgbymethod <- function(x) {
-    element <- x
-    "%p%" <- function(x, y) {
-        as.character(paste(x, y, sep = ""))
-    }
-    prep <- "Prep."
-    method <- "Method."
-    anal.prep <- prep %p% element
-    anal.method <- method %p% element
-    anal <- GOM[[element]]
-    anal.prep <- GOM[[anal.prep]]
-    anal.method <- GOM[[anal.method]]
-    analyte <- data.frame(GOM$Lab, GOM$names, anal, anal.prep, anal.method)
-    analyte <- na.omit(analyte)
-    bymethod <- tapply(analyte$anal, analyte$anal.method, mean, na.rm = TRUE)
-    cat("method means", "\n")
-    print(bymethod)
-    avg <- mean(tapply(analyte$anal, analyte$GOM.Lab, mean, na.rm = TRUE), na.rm = TRUE)
-    median <- median(tapply(analyte$anal, analyte$GOM.Lab, median, na.rm = TRUE), 
-        na.rm = TRUE)
-    # cat('mean of lab means: ','\n') cat(round(avg,3),'g/100g', '\n')
-    # cat('median of lab medians: ','\n') cat(round(median,3),'g/100g', '\n')
-}
-```
-
 
 ```r
-summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
+summary(GOM[[measurand]], na.rm = TRUE, digits = 4)  # with values without outlier removal
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    6.18    7.89    7.97    7.90    8.03    8.45     162
+##    3.94    4.41    4.68    4.60    4.81    5.25     180
 ```
 
 ```r
@@ -244,19 +218,8 @@ mean.before <- mean(GOM.mean[[measurand]], na.rm = TRUE)
 median.before <- median(GOM.median[[measurand]], na.rm = TRUE)
 ```
 
-The Al2O3 mean of the Lab means is 7.9057 g/100 g  
-The Al2O3 median of the Lab+Package medians is 7.975 g/100 g  
-
-
-```r
-avgbymethod(measurand)
-```
-
-```
-## method means 
-##             AAS ICP-AES     XRF 
-##      NA   7.912   7.975   7.895
-```
+The LOI mean of the Lab means is 4.594 g/100 g  
+The LOI median of the Lab+Package medians is 4.69 g/100 g  
 
 
 
@@ -265,7 +228,7 @@ plot_method(measurand)
 ```
 
 ```
-## Warning: Removed 14 rows containing missing values (geom_point).
+## Warning: Removed 4 rows containing missing values (geom_point).
 ```
 
 ![plot of chunk methods and lab plot as is](figure/methods_and_lab_plot_as_is1.png) 
@@ -285,23 +248,18 @@ plot_lab(measurand, "M")
 plot_youd(measurand, "GAS", "OKUM")
 ```
 
-```
-## Warning: Removed 1 rows containing missing values (geom_point).
-## Warning: Removed 1 rows containing missing values (geom_text).
-```
-
-![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-41.png) 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-31.png) 
 
 ```r
 plot_youd(measurand, "MUH", "OKUM")
 ```
 
 ```
-## Warning: Removed 5 rows containing missing values (geom_point).
-## Warning: Removed 5 rows containing missing values (geom_text).
+## Warning: Removed 1 rows containing missing values (geom_point).
+## Warning: Removed 1 rows containing missing values (geom_text).
 ```
 
-![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-42.png) 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-32.png) 
 
 #### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
 
@@ -318,7 +276,7 @@ barplot(k, las = 2, col = 1:4)
 
 
 ```r
-outlier <- c(12, 14) ## defining the outlying lab here with lab#
+outlier <- c(1, 31) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in 1:leng) ##  looping
 {
@@ -329,21 +287,21 @@ for(i in 1:leng) ##  looping
 ```
 
 ```
-## Lab 12 was removed
+## Lab 1 was removed
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    7.54    7.90    7.98    7.97    8.03    8.45     174
+##    3.94    4.40    4.69    4.60    4.81    5.02     192
 ```
 
 ```
-## Lab 14 was removed
+## Lab 31 was removed
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    7.55    7.91    7.98    7.97    8.03    8.45     186
+##    3.94    4.53    4.71    4.61    4.81    5.02     204
 ```
 
 ```r
@@ -356,16 +314,7 @@ plot_lab(measurand, 'M') # replotting without outlier
 
 ![plot of chunk outlier removal](figure/outlier_removal.png) 
 
-
-```r
-avgbymethod(measurand)
-```
-
-```
-## method means 
-##             AAS ICP-AES     XRF 
-##      NA   7.912   7.975   7.979
-```
+## Calculating mean and median of property value
 
 
 ```r
@@ -374,7 +323,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    7.55    7.91    7.98    7.97    8.03    8.45     186
+##    3.94    4.53    4.71    4.61    4.81    5.02     204
 ```
 
 ```r
@@ -383,14 +332,49 @@ median.before <- median(GOM.median[[measurand]], na.rm = TRUE)  # median of meas
 medianGOM.packet.after <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))  # median Lab and Packets after outlier removal
 ## median over median of packets within lab
 GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM))  # median of labs after outlier removal
+GOM.median.after <- merge(GOM.median.after, OKUM.methods, by = "Lab")
 median.after <- median(GOM.median.after[[measurand]], na.rm = TRUE)  # median of measurand after outlier removal
+## calculating method parameters
+"%p%" <- function(x, y) {
+    as.character(paste(x, y, sep = ""))
+}
+prep <- "Prep."
+method <- "Method."
+anal.prep <- prep %p% measurand
+anal.method <- method %p% measurand
+anal <- GOM.median.after[[measurand]]
+anal.prep <- GOM.median.after[[anal.prep]]
+anal.method <- GOM.median.after[[anal.method]]
+analyte <- data.frame(GOM.median.after$Lab, GOM.median.after$names, anal, anal.prep, 
+    anal.method)
+analyte <- na.omit(analyte)
+bymethod.n <- ddply(analyte, c("anal.method"), summarise, N = length(anal), 
+    mean = round(mean(anal), 3), median = round(median(anal), 3), sd = round(sd(anal), 
+        3), se = round(sd/sqrt(N), 3))
 ```
 
-The Al2O3 median of the Lab+packet medians without outlier removal is 7.975 g/100 g  
-The Al2O3 mean of the Lab means after outlier removal of lab # 12, 14 is 7.9769 g/100 g  
-The Al2O3 median of the Lab+packet medians after outlier removal is 7.98 g/100 g  
 
-## Measurement uncertainty estimations
+## Comparisons of property value calculations
+
+The LOI median of the Lab+packet medians without outlier removal is 4.69 g/100 g  
+The LOI mean of the Lab means after outlier removal of lab # 1, 31 is 4.6037 g/100 g  
+The LOI median of the Lab+packet medians after outlier removal is 4.6975 g/100 g  
+
+## Comparisons of method parameters based on median of the Lab+packet medians after outlier removal
+
+```r
+print(bymethod.n)
+```
+
+```
+##   anal.method  N  mean median    sd    se
+## 1              1 4.800   4.80    NA    NA
+## 2  gravimetry 19 4.591   4.65 0.281 0.064
+```
+
+
+
+## Measurement uncertainty estimations of property value
 
 
 ```r
@@ -440,17 +424,17 @@ plot(DF.lme)
 
 ### before outlier rejection
 
-The between-laboratory variance for Al2O3 is 0.1028   
-The between-bottle variance for Al2O3 is 7.4746 &times; 10<sup>-4</sup>   
-The repeatability variance for Al2O3 is 6.6814 &times; 10<sup>-4</sup>    
-The standard uncertainty for the assigned value of Al2O3 is 0.067  
+The between-laboratory variance for LOI is 0.0686   
+The between-bottle variance for LOI is 0.0041   
+The repeatability variance for LOI is 0.0018    
+The standard uncertainty for the assigned value of LOI is 0.0567  
 
 ### after outlier rejection
-The between-laboratory variance for Al2O3 is 0.0067   
-The between-bottle variance for Al2O3 is 7.43 &times; 10<sup>-4</sup>   
-The repeatability variance for Al2O3 is 2.6773 &times; 10<sup>-4</sup>    
-The standard uncertainty for the assigned value of Al2O3 is 0.0182  
-The standard uncertainty for the assigned value of Al2O3 is 0.0183  
+The between-laboratory variance for LOI is 0.0746   
+The between-bottle variance for LOI is 4.0583 &times; 10<sup>-4</sup>   
+The repeatability variance for LOI is 3.9529 &times; 10<sup>-4</sup>    
+The standard uncertainty for the property value of LOI is 0.0611  
+The standard uncertainty for the property value of LOI is 0.0612  (check with different way of calculation)
  
 ### tests for normal distribution
 
@@ -462,8 +446,8 @@ qqline(GOM.median.after[[measurand]])
 ![plot of chunk QQ plot](figure/QQ_plot.png) 
 
 
-### final result based on median for assinged value and measurement uncertainty based on variance components
-The Al2O3 median of the Lab+packet medians after outlier removal is 7.98 g/100 g   
-The expanded standard uncertainty for the assigned value of Al2O3 is 0.0381 
-exluded labs for Al2O3 is/are 12, 14  
-labs remaining for calculations 21  
+### final result based on median for property value and measurement uncertainty based on variance components
+The LOI median of the Lab+packet medians after outlier removal is 4.6975 g/100 g   
+The expanded standard uncertainty for the assigned value of LOI is 0.1281 
+exluded labs for LOI is/are 1, 31  
+labs remaining for calculations 20  

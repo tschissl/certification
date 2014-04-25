@@ -1,8 +1,8 @@
 Analyzing submitted data for OKUM
 ========================================================
 
-```{r}
-measurand <- 'Al2O3'
+```{r defining the measurand}
+measurand <- 'LOI'
 ```
 
 ## measurand selected `r measurand`
@@ -145,41 +145,15 @@ plot_youd <- function(a, y, z) { # a = measurand, y and z ref
 }
 
 ```
-```{r function calculating mean and median for individual measurand}
-avgbymethod <- function(x) {
-  element <- x
-  '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
-  prep <-  'Prep.'
-  method <- 'Method.'
-  anal.prep <- prep %p% element
-  anal.method <- method %p% element
-  anal <- GOM[[element]]
-  anal.prep <- GOM[[anal.prep]]
-  anal.method <- GOM[[anal.method]]
-  analyte <- data.frame(GOM$Lab, GOM$names, anal, anal.prep, anal.method )
-  analyte <- na.omit(analyte)
-  bymethod <- tapply(analyte$anal, analyte$anal.method, mean, na.rm=TRUE)
-  cat("method means", "\n")
-  print(bymethod)
-  avg <- mean(tapply(analyte$anal, analyte$GOM.Lab, mean, na.rm=TRUE), na.rm=TRUE)
-  median <- median(tapply(analyte$anal, analyte$GOM.Lab, median, na.rm=TRUE), na.rm=TRUE)
-  # cat("mean of lab means: ","\n")
-  # cat(round(avg,3),"g/100g", "\n")
-  # cat("median of lab medians: ","\n")
-  # cat(round(median,3),"g/100g", "\n")
-}
-```
+
 ```{r summary as is for indiviual measurand}
-summary(GOM[[measurand]], na.rm=TRUE, digits=4)
+summary(GOM[[measurand]], na.rm=TRUE, digits=4) # with values without outlier removal
 mean.before <- mean(GOM.mean[[measurand]], na.rm=TRUE)
 median.before <- median(GOM.median[[measurand]], na.rm=TRUE)
 ```
 The `r measurand` mean of the Lab means is `r round(mean.before, 4)` g/100 g  
 The `r measurand` median of the Lab+Package medians is `r round(median.before, 4)` g/100 g  
 
-```{r method averages as is}
-avgbymethod(measurand)
-```
 
 ```{r methods and lab plot as is, fig.width=10, fig.height=4}
 plot_method(measurand); plot_lab(measurand,'M')
@@ -196,7 +170,7 @@ barplot(k, las=2, col=1:4)
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=10, fig.height=6}
-outlier <- c(12, 14) ## defining the outlying lab here with lab#
+outlier <- c(1, 31) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in 1:leng) ##  looping
 {
@@ -206,23 +180,49 @@ for(i in 1:leng) ##  looping
   }
 plot_lab(measurand, 'M') # replotting without outlier
 ```
-```{r}
-avgbymethod(measurand)
-```
-```{r}
+## Calculating mean and median of property value
+
+```{r calculating mean and median of property value}
 summary(GOM[[measurand]], na.rm=TRUE, digits=4)
 mean <- mean(tapply(GOM[[measurand]], GOM$Lab, mean, na.rm=TRUE), na.rm=TRUE) # mean w/o outlier removal
 median.before <- median(GOM.median[[measurand]], na.rm=TRUE) # median of measurand w/o outlier removal
 medianGOM.packet.after <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM)) # median Lab and Packets after outlier removal
 ## median over median of packets within lab
 GOM.median.after <- ddply(medianGOM.packet.after, c("Lab"), numcolwise(medianGOM)) # median of labs after outlier removal
+GOM.median.after <- merge(GOM.median.after, OKUM.methods, by="Lab")
 median.after <- median(GOM.median.after[[measurand]], na.rm=TRUE) # median of measurand after outlier removal
+## calculating method parameters
+  '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
+  prep <-  'Prep.'
+  method <- 'Method.'
+  anal.prep <- prep %p% measurand
+  anal.method <- method %p% measurand
+  anal <- GOM.median.after[[measurand]]
+  anal.prep <- GOM.median.after[[anal.prep]]
+  anal.method <- GOM.median.after[[anal.method]]
+  analyte <- data.frame(GOM.median.after$Lab, GOM.median.after$names, anal, anal.prep, anal.method )
+  analyte <- na.omit(analyte)
+  bymethod.n <- ddply(analyte, c("anal.method"), summarise, 
+                      N=length(anal), 
+                      mean = round(mean(anal), 3), 
+                      median = round(median(anal), 3), 
+                      sd = round(sd(anal),3), 
+                      se = round(sd/sqrt(N),3))
 ```
+
+## Comparisons of property value calculations
+
 The `r measurand` median of the Lab+packet medians without outlier removal is `r round(median.before, 4)` g/100 g  
 The `r measurand` mean of the Lab means after outlier removal of lab # `r outlier` is `r round(mean, 4)` g/100 g  
 The `r measurand` median of the Lab+packet medians after outlier removal is `r round(median.after, 4)` g/100 g  
 
-## Measurement uncertainty estimations
+## Comparisons of method parameters based on median of the Lab+packet medians after outlier removal
+```{r method comparison output}
+print(bymethod.n)
+```
+
+
+## Measurement uncertainty estimations of property value
 
 ```{r measurement uncertainty of data before outlier rejection}
 medianGOM.packet$Lab <- as.factor(medianGOM.packet$Lab) # using only the median of the 3 packages per lab
@@ -272,8 +272,8 @@ The standard uncertainty for the assigned value of `r measurand` is `r u2`
 The between-laboratory variance for `r measurand` is `r sL2.a`   
 The between-bottle variance for `r measurand` is `r sbb2.a`   
 The repeatability variance for `r measurand` is `r sr2.a`    
-The standard uncertainty for the assigned value of `r measurand` is `r u1.a`  
-The standard uncertainty for the assigned value of `r measurand` is `r u2.a`  
+The standard uncertainty for the property value of `r measurand` is `r u1.a`  
+The standard uncertainty for the property value of `r measurand` is `r u2.a`  (check with different way of calculation)
  
 ### tests for normal distribution
 ```{r QQ plot}
@@ -281,7 +281,7 @@ qqnorm(GOM.median.after[[measurand]])
 qqline(GOM.median.after[[measurand]])
 ```
 
-### final result based on median for assinged value and measurement uncertainty based on variance components
+### final result based on median for property value and measurement uncertainty based on variance components
 The `r measurand` median of the Lab+packet medians after outlier removal is `r round(median.after, 4)` g/100 g   
 The expanded standard uncertainty for the assigned value of `r measurand` is `r u2.a*t.value` 
 exluded labs for `r measurand` is/are `r outlier`  
