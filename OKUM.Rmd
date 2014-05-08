@@ -2,7 +2,7 @@ Analyzing submitted data for OKUM
 ========================================================
 
 ```{r defining the measurand}
-measurand <- 'LOI'
+measurand <- 'TiO2'
 ```
 
 ## measurand selected `r measurand`
@@ -45,6 +45,7 @@ mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size
 ```{r creating means}
 ## means over packets within lab 
 meanGOM <- function(x) mean(x, na.rm=TRUE)
+sdGOM <- function(x) sd(x, na.rm=TRUE)
 meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM))
 ## median over median of packets within lab
 GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
@@ -54,6 +55,7 @@ GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
 require(plyr)
 medianGOM <- function(x) median(x, na.rm=TRUE)
 medianGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
+GOM.sd <- ddply(medianGOM.packet, c("Lab"), numcolwise(sdGOM))
 ## median over median of packets within lab
 GOM.median <- ddply(medianGOM.packet, c("Lab"), numcolwise(medianGOM))
 ```
@@ -105,6 +107,9 @@ plot_lab <- function(x, type) {
   p + xlab("lab") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + geom_smooth(aes(group=1)) + mytheme
 }
 ```
+
+#### defining the function of Youden plots
+
 ```{r plot_youd functin for youden plot}
 plot_youd <- function(a, y, z) { # a = measurand, y and z ref
   '%p%' <- function(a, b) {as.character(paste (a, b, sep =""))}
@@ -133,14 +138,23 @@ plot_youd <- function(a, y, z) { # a = measurand, y and z ref
     RM2 <- a
   }
   
-  RM1 <- GOM[[RM1]]
+  RM1.s <- GOM.sd[[RM1]]/sd(GOM.median[[RM1]], na.rm = TRUE) # calculating the normalised standard deviations
+  RM1 <- GOM.median[[RM1]]
   RM1 <- (RM1-median(RM1, na.rm = TRUE))/sd(RM1, na.rm = TRUE) #calculating z-scores
-  RM2 <- GOM[[RM2]]
+  RM2.s <- GOM.sd[[RM2]]/sd(GOM.median[[RM2]], na.rm = TRUE) # calculating the normalised standard deviations
+  RM2 <- GOM.median[[RM2]]
   RM2 <- (RM2-median(RM2, na.rm = TRUE))/sd(RM2, na.rm = TRUE) #calculating z-scores
-  RM <- data.frame(GOM$Lab, GOM$names, RM1, RM2)
-  RM <- na.omit(RM)
-  p <- ggplot(RM, aes(RM1, RM2, label = GOM.Lab))  + xlim(-5, 5) + ylim(-5,5) + geom_point(aes(colour=factor(GOM.Lab)), size = 4)
-  p <- p + xlab(y) + ylab(z) + labs(title = a) + labs(colour = "Lab") + mytheme + geom_abline(intercept = 0, slope = 1) +  geom_abline(intercept = 2.8284, slope = 1) +  geom_abline(intercept = - 2.8284, slope = 1) +  geom_abline(intercept = 2.8284, slope = - 1) +  geom_abline(intercept = -2.8284, slope = - 1) + geom_text(data = NULL, x = -0.5, y = 2.85, label = "z = 2") + geom_text(aes(colour=factor(GOM.Lab)), hjust=1, vjust=0)
+  RM <- data.frame(GOM.median$Lab, RM1, RM2, RM1.s, RM2.s) # creating a data frame for the measurand
+  RM <- na.omit(RM) # removing all "NA"
+  p <- ggplot(RM, aes(RM1, RM2, label = GOM.median.Lab))  + xlim(-5, 5) + ylim(-5,5) + 
+    geom_point(aes(colour=factor(GOM.median.Lab)), size = 4) + 
+    geom_errorbar(aes(ymin=RM2-RM2.s, ymax=RM2+RM2.s)) + 
+    geom_errorbarh(aes(xmin=RM1-RM1.s, xmax=RM1+RM1.s))
+  p <- p + xlab(y) + ylab(z) + labs(title = a) + labs(colour = "GOM.median.Lab") + mytheme + 
+    geom_abline(intercept = 0, slope = 1) +  geom_abline(intercept = 2.8284, slope = 1) +  
+    geom_abline(intercept = - 2.8284, slope = 1) +  geom_abline(intercept = 2.8284, slope = - 1) +  
+    geom_abline(intercept = -2.8284, slope = - 1) + geom_text(data = NULL, x = -0.5, y = 2.85, label = "z = 2") + 
+    geom_text(aes(colour=factor(GOM.median.Lab)), hjust=1, vjust=0) 
   p + theme(legend.position="none") #+ stat_density2d(aes(fill = ..level..), geom="polygon") 
 }
 
@@ -156,7 +170,7 @@ The `r measurand` median of the Lab+Package medians is `r round(median.before, 4
 
 
 ```{r methods and lab plot as is, fig.width=10, fig.height=4}
-plot_method(measurand); plot_lab(measurand,'M')
+plot_method(measurand); plot_lab(measurand,'M') ## M for majors, T for traces
 ```
 ```{r fig.width=6, fig.height=6}
 plot_youd(measurand, 'GAS', 'OKUM'); plot_youd(measurand, 'MUH', 'OKUM')
@@ -170,15 +184,15 @@ barplot(k, las=2, col=1:4)
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=10, fig.height=6}
-outlier <- c(1, 31) ## defining the outlying lab here with lab#
+outlier <- c(10, 26, 31) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
-for(i in 1:leng) ##  looping
+for(i in seq(leng)) ##  looping
 {
   GOM[[measurand]] <- ifelse(GOM$Lab==outlier[i], NA, GOM[[measurand]]) ## replacing values of outlying lab with "NA" and defining new GOM
   message("Lab ", outlier[i], " was removed")
   print(summary(GOM[[measurand]], na.rm=TRUE, digits=4))
   }
-plot_lab(measurand, 'M') # replotting without outlier
+plot_lab(measurand, 'T') # replotting without outlier, M for majors and T for traces
 ```
 ## Calculating mean and median of property value
 
@@ -286,3 +300,5 @@ The `r measurand` median of the Lab+packet medians after outlier removal is `r r
 The expanded standard uncertainty for the assigned value of `r measurand` is `r u2.a*t.value` 
 exluded labs for `r measurand` is/are `r outlier`  
 labs remaining for calculations `r p`  
+#### comments
+labs #10, #26 and #31 removed based on Youden plot

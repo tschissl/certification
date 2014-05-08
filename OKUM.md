@@ -3,11 +3,11 @@ Analyzing submitted data for OKUM
 
 
 ```r
-measurand <- "LOI"
+measurand <- "TiO2"
 ```
 
 
-## measurand selected LOI
+## measurand selected TiO2
 
 
 #### Importing the data and assigning factors
@@ -83,6 +83,7 @@ mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black",
 ```r
 ## means over packets within lab
 meanGOM <- function(x) mean(x, na.rm = TRUE)
+sdGOM <- function(x) sd(x, na.rm = TRUE)
 meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM))
 ## median over median of packets within lab
 GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
@@ -94,6 +95,7 @@ GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
 require(plyr)
 medianGOM <- function(x) median(x, na.rm = TRUE)
 medianGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
+GOM.sd <- ddply(medianGOM.packet, c("Lab"), numcolwise(sdGOM))
 ## median over median of packets within lab
 GOM.median <- ddply(medianGOM.packet, c("Lab"), numcolwise(medianGOM))
 ```
@@ -165,6 +167,9 @@ plot_lab <- function(x, type) {
 ```
 
 
+#### defining the function of Youden plots
+
+
 ```r
 plot_youd <- function(a, y, z) {
     # a = measurand, y and z ref
@@ -184,19 +189,23 @@ plot_youd <- function(a, y, z) {
         RM2 <- a
     }
     
-    RM1 <- GOM[[RM1]]
+    RM1.s <- GOM.sd[[RM1]]/sd(GOM.median[[RM1]], na.rm = TRUE)  # calculating the normalised standard deviations
+    RM1 <- GOM.median[[RM1]]
     RM1 <- (RM1 - median(RM1, na.rm = TRUE))/sd(RM1, na.rm = TRUE)  #calculating z-scores
-    RM2 <- GOM[[RM2]]
+    RM2.s <- GOM.sd[[RM2]]/sd(GOM.median[[RM2]], na.rm = TRUE)  # calculating the normalised standard deviations
+    RM2 <- GOM.median[[RM2]]
     RM2 <- (RM2 - median(RM2, na.rm = TRUE))/sd(RM2, na.rm = TRUE)  #calculating z-scores
-    RM <- data.frame(GOM$Lab, GOM$names, RM1, RM2)
-    RM <- na.omit(RM)
-    p <- ggplot(RM, aes(RM1, RM2, label = GOM.Lab)) + xlim(-5, 5) + ylim(-5, 
-        5) + geom_point(aes(colour = factor(GOM.Lab)), size = 4)
-    p <- p + xlab(y) + ylab(z) + labs(title = a) + labs(colour = "Lab") + mytheme + 
-        geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = 2.8284, 
+    RM <- data.frame(GOM.median$Lab, RM1, RM2, RM1.s, RM2.s)  # creating a data frame for the measurand
+    RM <- na.omit(RM)  # removing all 'NA'
+    p <- ggplot(RM, aes(RM1, RM2, label = GOM.median.Lab)) + xlim(-5, 5) + ylim(-5, 
+        5) + geom_point(aes(colour = factor(GOM.median.Lab)), size = 4) + geom_errorbar(aes(ymin = RM2 - 
+        RM2.s, ymax = RM2 + RM2.s)) + geom_errorbarh(aes(xmin = RM1 - RM1.s, 
+        xmax = RM1 + RM1.s))
+    p <- p + xlab(y) + ylab(z) + labs(title = a) + labs(colour = "GOM.median.Lab") + 
+        mytheme + geom_abline(intercept = 0, slope = 1) + geom_abline(intercept = 2.8284, 
         slope = 1) + geom_abline(intercept = -2.8284, slope = 1) + geom_abline(intercept = 2.8284, 
         slope = -1) + geom_abline(intercept = -2.8284, slope = -1) + geom_text(data = NULL, 
-        x = -0.5, y = 2.85, label = "z = 2") + geom_text(aes(colour = factor(GOM.Lab)), 
+        x = -0.5, y = 2.85, label = "z = 2") + geom_text(aes(colour = factor(GOM.median.Lab)), 
         hjust = 1, vjust = 0)
     p + theme(legend.position = "none")  #+ stat_density2d(aes(fill = ..level..), geom='polygon') 
 }
@@ -210,7 +219,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)  # with values without outli
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    3.94    4.41    4.68    4.60    4.81    5.25     180
+##    0.35    0.37    0.38    0.39    0.39    0.46     126
 ```
 
 ```r
@@ -218,8 +227,8 @@ mean.before <- mean(GOM.mean[[measurand]], na.rm = TRUE)
 median.before <- median(GOM.median[[measurand]], na.rm = TRUE)
 ```
 
-The LOI mean of the Lab means is 4.594 g/100 g  
-The LOI median of the Lab+Package medians is 4.69 g/100 g  
+The TiO2 mean of the Lab means is 0.3858 g/100 g  
+The TiO2 median of the Lab+Package medians is 0.38 g/100 g  
 
 
 
@@ -228,13 +237,13 @@ plot_method(measurand)
 ```
 
 ```
-## Warning: Removed 4 rows containing missing values (geom_point).
+## Warning: Removed 12 rows containing missing values (geom_point).
 ```
 
 ![plot of chunk methods and lab plot as is](figure/methods_and_lab_plot_as_is1.png) 
 
 ```r
-plot_lab(measurand, "M")
+plot_lab(measurand, "M")  ## M for majors, T for traces
 ```
 
 ```
@@ -248,18 +257,15 @@ plot_lab(measurand, "M")
 plot_youd(measurand, "GAS", "OKUM")
 ```
 
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-31.png) 
+```
+## Error: 'data' muss vom Typ vector sein, war 'NULL'
+```
 
 ```r
 plot_youd(measurand, "MUH", "OKUM")
 ```
 
-```
-## Warning: Removed 1 rows containing missing values (geom_point).
-## Warning: Removed 1 rows containing missing values (geom_text).
-```
-
-![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-32.png) 
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
 
 #### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
 
@@ -276,9 +282,9 @@ barplot(k, las = 2, col = 1:4)
 
 
 ```r
-outlier <- c(1, 31) ## defining the outlying lab here with lab#
+outlier <- c(10, 26, 31) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
-for(i in 1:leng) ##  looping
+for(i in seq(leng)) ##  looping
 {
   GOM[[measurand]] <- ifelse(GOM$Lab==outlier[i], NA, GOM[[measurand]]) ## replacing values of outlying lab with "NA" and defining new GOM
   message("Lab ", outlier[i], " was removed")
@@ -287,12 +293,21 @@ for(i in 1:leng) ##  looping
 ```
 
 ```
-## Lab 1 was removed
+## Lab 10 was removed
 ```
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    3.94    4.40    4.69    4.60    4.81    5.02     192
+##    0.35    0.37    0.38    0.39    0.39    0.46     138
+```
+
+```
+## Lab 26 was removed
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##    0.35    0.37    0.38    0.39    0.39    0.46     150
 ```
 
 ```
@@ -301,11 +316,11 @@ for(i in 1:leng) ##  looping
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    3.94    4.53    4.71    4.61    4.81    5.02     204
+##    0.35    0.37    0.38    0.39    0.39    0.46     162
 ```
 
 ```r
-plot_lab(measurand, 'M') # replotting without outlier
+plot_lab(measurand, 'T') # replotting without outlier, M for majors and T for traces
 ```
 
 ```
@@ -323,7 +338,7 @@ summary(GOM[[measurand]], na.rm = TRUE, digits = 4)
 
 ```
 ##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##    3.94    4.53    4.71    4.61    4.81    5.02     204
+##    0.35    0.37    0.38    0.39    0.39    0.46     162
 ```
 
 ```r
@@ -356,9 +371,9 @@ bymethod.n <- ddply(analyte, c("anal.method"), summarise, N = length(anal),
 
 ## Comparisons of property value calculations
 
-The LOI median of the Lab+packet medians without outlier removal is 4.69 g/100 g  
-The LOI mean of the Lab means after outlier removal of lab # 1, 31 is 4.6037 g/100 g  
-The LOI median of the Lab+packet medians after outlier removal is 4.6975 g/100 g  
+The TiO2 median of the Lab+packet medians without outlier removal is 0.38 g/100 g  
+The TiO2 mean of the Lab means after outlier removal of lab # 10, 26, 31 is 0.3857 g/100 g  
+The TiO2 median of the Lab+packet medians after outlier removal is 0.3799 g/100 g  
 
 ## Comparisons of method parameters based on median of the Lab+packet medians after outlier removal
 
@@ -368,8 +383,10 @@ print(bymethod.n)
 
 ```
 ##   anal.method  N  mean median    sd    se
-## 1              1 4.800   4.80    NA    NA
-## 2  gravimetry 19 4.591   4.65 0.281 0.064
+## 1         AAS  1 0.370  0.370    NA    NA
+## 2     ICP-AES  2 0.382  0.382 0.018 0.013
+## 3      ICP-MS  3 0.391  0.373 0.040 0.023
+## 4         XRF 17 0.386  0.380 0.020 0.005
 ```
 
 
@@ -424,17 +441,17 @@ plot(DF.lme)
 
 ### before outlier rejection
 
-The between-laboratory variance for LOI is 0.0686   
-The between-bottle variance for LOI is 0.0041   
-The repeatability variance for LOI is 0.0018    
-The standard uncertainty for the assigned value of LOI is 0.0567  
+The between-laboratory variance for TiO2 is 4.0248 &times; 10<sup>-4</sup>   
+The between-bottle variance for TiO2 is 6.3813 &times; 10<sup>-6</sup>   
+The repeatability variance for TiO2 is 4.4695 &times; 10<sup>-6</sup>    
+The standard uncertainty for the assigned value of TiO2 is 0.004  
 
 ### after outlier rejection
-The between-laboratory variance for LOI is 0.0746   
-The between-bottle variance for LOI is 4.0583 &times; 10<sup>-4</sup>   
-The repeatability variance for LOI is 3.9529 &times; 10<sup>-4</sup>    
-The standard uncertainty for the property value of LOI is 0.0611  
-The standard uncertainty for the property value of LOI is 0.0612  (check with different way of calculation)
+The between-laboratory variance for TiO2 is 4.4874 &times; 10<sup>-4</sup>   
+The between-bottle variance for TiO2 is 7.0475 &times; 10<sup>-6</sup>   
+The repeatability variance for TiO2 is 4.9493 &times; 10<sup>-6</sup>    
+The standard uncertainty for the property value of TiO2 is 0.0044  
+The standard uncertainty for the property value of TiO2 is 0.0044  (check with different way of calculation)
  
 ### tests for normal distribution
 
@@ -447,7 +464,9 @@ qqline(GOM.median.after[[measurand]])
 
 
 ### final result based on median for property value and measurement uncertainty based on variance components
-The LOI median of the Lab+packet medians after outlier removal is 4.6975 g/100 g   
-The expanded standard uncertainty for the assigned value of LOI is 0.1281 
-exluded labs for LOI is/are 1, 31  
-labs remaining for calculations 20  
+The TiO2 median of the Lab+packet medians after outlier removal is 0.3799 g/100 g   
+The expanded standard uncertainty for the assigned value of TiO2 is 0.0092 
+exluded labs for TiO2 is/are 10, 26, 31  
+labs remaining for calculations 23  
+#### comments
+labs #10, #26 and #31 removed based on Youden plot
