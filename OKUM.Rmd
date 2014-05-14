@@ -1,24 +1,42 @@
-Analyzing submitted data for OKUM
+Analyzing submitted data for OKUM, GAS or MUH-1
 ========================================================
+The data for this interlaboratory comparison based certification of property values were analysed by 36 labs following the nested design approached as proposed the IAG certification protocol. Participating labs received 3 packages of OKUM and MUH-1 respectively and one package of GAS. The latter was supplied as a "traceablility" sample and is here used for quality control purposes. It was the task of the labs to prepare 2 make two independent sample preparations (i.e. digstions) of each packet and analyse the preparation on two different days. Labs thus should have submitted 12 values (3x2x2 PacketxPrepxDay). 
 
-```{r defining the measurand}
-measurand <- 'TiO2'
-```
+```{r defining the measurand and RM}
+refmat <- 'MUH' # defining the RM
+measur <- 'Al2O3' # defining the measurand
+'%p%' <- function(a, b) {as.character(paste (a, b, sep =""))} # the measureands have different endings depending on which RM: OKUM not extention, MUH extention ".1" and GAS has the extention ".2"
+switch(
+    refmat,
+    GAS = rm1 <- 2,
+    MUH = rm1 <- 1,
+    OKUM = rm1 <- 0
+  )
+  if(rm1 > 0) 
+  {measurand <- measur %p% '.' %p% rm1
+  } else 
+  {
+    measurand <- measur
+  }
+``` 
 
-## measurand selected `r measurand`
+# measurand selected `r measurand` for candiate reference material `r refmat`
 
 
 #### Importing the data and assigning factors
 
 ```{r results='hide'}
-library(ggplot2)
+library(ggplot2) # needed for most plots in this document
 # library(devtools) #needed for "order_by"
 # install_github("plotflow", "trinker")
 library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
 library(metRology) #for mandel k and h calculations
 library(ape) # needed for varcomp (variance component) extraction
 library(nlme) # needed for lme
-require(plyr)
+require(plyr) # needed for ddply
+
+# Data for certification project were gathered and joined in Excel. The files were exported from Excel as .csv files to make the universially readable. For this markdown the data is stored in the "root/documents" directory.
+# Data for GAS, OKUM and MUH-1 are merged together with a methods file ('OKUM.method') into a universal data frame file named 'GOM'
 
 GAS <- read.csv("~/GitHub/certification/GAS.csv", sep=";")
 OKUM <- read.csv("~/GitHub/certification/OKUM.csv", sep=";")
@@ -44,9 +62,9 @@ mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size
 
 ```{r creating means}
 ## means over packets within lab 
-meanGOM <- function(x) mean(x, na.rm=TRUE)
-sdGOM <- function(x) sd(x, na.rm=TRUE)
-meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM))
+meanGOM <- function(x) mean(x, na.rm=TRUE) # defining a function for further calcuations
+sdGOM <- function(x) sd(x, na.rm=TRUE) # defining a function for further calcuations, here for calculating standard deviations neede for Youden plot
+meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM)) # calculated the median for each Packet within each Lab by calculating the median of days and preparations lumped together
 ## median over median of packets within lab
 GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
 ```
@@ -67,8 +85,8 @@ plot_method <- function(x) {
   '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
   prep <-  'Prep.'
   method <- 'Method.'
-  anal.prep <- prep %p% element
-  anal.method <- method %p% element
+  anal.prep <- prep %p% measur
+  anal.method <- method %p% measur
   anal <- GOM[[element]]
   anal.prep <- GOM[[anal.prep]]
   anal.method <- GOM[[anal.method]]
@@ -86,8 +104,8 @@ plot_lab <- function(x, type) {
   '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
   prep <-  'Prep.'
   method <- 'Method.'
-  anal.prep <- prep %p% element
-  anal.method <- method %p% element
+  anal.prep <- prep %p% measur
+  anal.method <- method %p% measur
   anal <- GOM[[element]]
   anal.prep <- GOM[[anal.prep]]
   anal.method <- GOM[[anal.method]]
@@ -137,25 +155,27 @@ plot_youd <- function(a, y, z) { # a = measurand, y and z ref
   {
     RM2 <- a
   }
-  
-  RM1.s <- GOM.sd[[RM1]]/sd(GOM.median[[RM1]], na.rm = TRUE) # calculating the normalised standard deviations
+ if(rm1 > 1)
+   {RM1.s <- GOM.sd[[RM1]]} else
+     {RM1.s <- GOM.sd[[RM1]]/sd(GOM.median[[RM1]], na.rm = TRUE)}# calculating the normalised standard deviations
+ if(rm2 > 1)
+   {RM2.s <- GOM.sd[[RM2]]} else
+     {RM2.s <- GOM.sd[[RM2]]/sd(GOM.median[[RM2]], na.rm = TRUE)}# calculating the normalised standard deviations
   RM1 <- GOM.median[[RM1]]
   RM1 <- (RM1-median(RM1, na.rm = TRUE))/sd(RM1, na.rm = TRUE) #calculating z-scores
-  RM2.s <- GOM.sd[[RM2]]/sd(GOM.median[[RM2]], na.rm = TRUE) # calculating the normalised standard deviations
   RM2 <- GOM.median[[RM2]]
   RM2 <- (RM2-median(RM2, na.rm = TRUE))/sd(RM2, na.rm = TRUE) #calculating z-scores
-  RM <- data.frame(GOM.median$Lab, RM1, RM2, RM1.s, RM2.s) # creating a data frame for the measurand
-  RM <- na.omit(RM) # removing all "NA"
+  RM <- data.frame(GOM.median$Lab, RM1, RM2, RM1.s, RM2.s) # creating a data frame for the measurand #
+  # RM <- na.omit(RM) # removing all "NA"
   p <- ggplot(RM, aes(RM1, RM2, label = GOM.median.Lab))  + xlim(-5, 5) + ylim(-5,5) + 
-    geom_point(aes(colour=factor(GOM.median.Lab)), size = 4) + 
-    geom_errorbar(aes(ymin=RM2-RM2.s, ymax=RM2+RM2.s)) + 
-    geom_errorbarh(aes(xmin=RM1-RM1.s, xmax=RM1+RM1.s))
+    geom_point(aes(colour=factor(GOM.median.Lab)), size = 4)
   p <- p + xlab(y) + ylab(z) + labs(title = a) + labs(colour = "GOM.median.Lab") + mytheme + 
     geom_abline(intercept = 0, slope = 1) +  geom_abline(intercept = 2.8284, slope = 1) +  
     geom_abline(intercept = - 2.8284, slope = 1) +  geom_abline(intercept = 2.8284, slope = - 1) +  
     geom_abline(intercept = -2.8284, slope = - 1) + geom_text(data = NULL, x = -0.5, y = 2.85, label = "z = 2") + 
-    geom_text(aes(colour=factor(GOM.median.Lab)), hjust=1, vjust=0) 
-  p + theme(legend.position="none") #+ stat_density2d(aes(fill = ..level..), geom="polygon") 
+    geom_text(aes(colour=factor(GOM.median.Lab)), hjust=1, vjust=0) + theme(legend.position="none") #+ stat_density2d(aes(fill = ..level..), geom="polygon")
+  p  + geom_errorbar(aes(ymin=RM2-RM2.s, ymax=RM2+RM2.s)) + geom_errorbarh(aes(xmin=RM1-RM1.s, xmax=RM1+RM1.s))
+  
 }
 
 ```
@@ -173,7 +193,7 @@ The `r measurand` median of the Lab+Package medians is `r round(median.before, 4
 plot_method(measurand); plot_lab(measurand,'M') ## M for majors, T for traces
 ```
 ```{r fig.width=6, fig.height=6}
-plot_youd(measurand, 'GAS', 'OKUM'); plot_youd(measurand, 'MUH', 'OKUM')
+plot_youd(measur, 'GAS', 'OKUM'); plot_youd(measur, 'MUH', 'OKUM')
 ```
 #### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
 ```{r mandel k, fig.width=10, fig.height=6}
@@ -184,7 +204,7 @@ barplot(k, las=2, col=1:4)
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=10, fig.height=6}
-outlier <- c(10, 26, 31) ## defining the outlying lab here with lab#
+outlier <- c(12, 14, 31) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in seq(leng)) ##  looping
 {
@@ -209,8 +229,8 @@ median.after <- median(GOM.median.after[[measurand]], na.rm=TRUE) # median of me
   '%p%' <- function(x, y) {as.character(paste (x, y, sep =""))}
   prep <-  'Prep.'
   method <- 'Method.'
-  anal.prep <- prep %p% measurand
-  anal.method <- method %p% measurand
+  anal.prep <- prep %p% measur
+  anal.method <- method %p% measur
   anal <- GOM.median.after[[measurand]]
   anal.prep <- GOM.median.after[[anal.prep]]
   anal.method <- GOM.median.after[[anal.method]]
@@ -247,7 +267,7 @@ DF.lme <- na.omit(DF.lme)
 names(DF.lme) <- c("Lab", "Packet", "measurand")
 GOM.lme <- lme(measurand ~ 1, random = ~ 1|Lab/Packet, data=DF.lme) # linear model with random effects
 sL2 <- varcomp(GOM.lme, FALSE, FALSE)[[1]] # between-laboratory variance
-sbb2 <- varcomp(GOM.lme, FALSE, FALSE)[[2]] # between bottle standard deviation
+sbb2 <- varcomp(GOM.lme, FALSE, FALSE)[[2]] # between bottle variance
 sr2 <- varcomp(GOM.lme, FALSE, FALSE)[[3]] # repeatability standard deviation
 n.p <- dim(DF.lme)[1] # number of obervations
 p <- length(unique(DF.lme$Lab)) # haven't found a better way how to extract the number of labs (number of groups)
@@ -301,4 +321,4 @@ The expanded standard uncertainty for the assigned value of `r measurand` is `r 
 exluded labs for `r measurand` is/are `r outlier`  
 labs remaining for calculations `r p`  
 #### comments
-labs #10, #26 and #31 removed based on Youden plot
+labs #12 and #14 based on Youden plot and PP-XRF, lab #31 removed because of bad performance Madel's k and PP-XRF
