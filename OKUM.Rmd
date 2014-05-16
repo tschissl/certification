@@ -1,10 +1,14 @@
-Analyzing submitted data for OKUM, GAS or MUH-1
+Analysing submitted data for OKUM, GAS or MUH-1
 ========================================================
-The data for this interlaboratory comparison based certification of property values were analysed by 36 labs following the nested design approached as proposed the IAG certification protocol. Participating labs received 3 packages of OKUM and MUH-1 respectively and one package of GAS. The latter was supplied as a "traceablility" sample and is here used for quality control purposes. It was the task of the labs to prepare 2 make two independent sample preparations (i.e. digstions) of each packet and analyse the preparation on two different days. Labs thus should have submitted 12 values (3x2x2 PacketxPrepxDay). 
-
+The data for this interlaboratory comparison based certification of property values were analysed by 36 labs following the nested design approached as proposed the IAG certification protocol. Participating labs received 3 packages of OKUM and MUH-1 respectively and one package of GAS. The latter was supplied as a "traceablility" sample and is here used for quality control purposes. It was the task of the labs to prepare two independent sample preparations (i.e. digstions) of each packet and analyse the preparations on two different days. Labs thus should have submitted 12 values (3x2x2 PacketxPrepxDay). 
+```{r Data_prep, echo=FALSE, message=FALSE, warning=FALSE}
+# Moved this outside the document for easy of reading
+```
 ```{r defining the measurand and RM}
-refmat <- 'MUH' # defining the RM
-measur <- 'Al2O3' # defining the measurand
+refmat <- 'OKUM' # defining the RM
+measur <- 'P2O5' # defining the measurand
+``` 
+```{r defining the variables used for selected RM, include=FALSE}
 '%p%' <- function(a, b) {as.character(paste (a, b, sep =""))} # the measureands have different endings depending on which RM: OKUM not extention, MUH extention ".1" and GAS has the extention ".2"
 switch(
     refmat,
@@ -18,14 +22,14 @@ switch(
   {
     measurand <- measur
   }
-``` 
+```
 
 # measurand selected `r measurand` for candiate reference material `r refmat`
 
 
-#### Importing the data and assigning factors
+#### importing the data and assigning factors
 
-```{r results='hide'}
+```{r results='hide', include=FALSE}
 library(ggplot2) # needed for most plots in this document
 # library(devtools) #needed for "order_by"
 # install_github("plotflow", "trinker")
@@ -34,6 +38,9 @@ library(metRology) #for mandel k and h calculations
 library(ape) # needed for varcomp (variance component) extraction
 library(nlme) # needed for lme
 require(plyr) # needed for ddply
+library(knitr)
+opts_chunk$set(dev="png",dev.args=list(type="cairo"), dpi=96)
+
 
 # Data for certification project were gathered and joined in Excel. The files were exported from Excel as .csv files to make the universially readable. For this markdown the data is stored in the "root/documents" directory.
 # Data for GAS, OKUM and MUH-1 are merged together with a methods file ('OKUM.method') into a universal data frame file named 'GOM'
@@ -55,30 +62,11 @@ GOMorig <- GOM  #keeping the original file
 
 #### defining the plotting theme
 
-```{r}
+```{r mytheme, include=FALSE}
 mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size = rel(2))) + theme(axis.title.x = element_text(size = rel(1.8)))+ theme(axis.title.y = element_text(size = rel(1.8))) +theme(axis.text.x = element_text(size = rel(1.5))) + theme(axis.text.y = element_text(size = rel(1.5))) + theme(legend.title = element_text(size = rel(1))) +theme(legend.text = element_text(size = rel(0.8)))
 ```
-#### initial calculations with complete data set
-
-```{r creating means}
-## means over packets within lab 
-meanGOM <- function(x) mean(x, na.rm=TRUE) # defining a function for further calcuations
-sdGOM <- function(x) sd(x, na.rm=TRUE) # defining a function for further calcuations, here for calculating standard deviations neede for Youden plot
-meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM)) # calculated the median for each Packet within each Lab by calculating the median of days and preparations lumped together
-## median over median of packets within lab
-GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
-```
-```{r creating median}
-## median over packets within lab 
-require(plyr)
-medianGOM <- function(x) median(x, na.rm=TRUE)
-medianGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
-GOM.sd <- ddply(medianGOM.packet, c("Lab"), numcolwise(sdGOM))
-## median over median of packets within lab
-GOM.median <- ddply(medianGOM.packet, c("Lab"), numcolwise(medianGOM))
-```
 #### defining the function for plotting methods vs. measurand mass fraction. Sample preparation methods are also marked in the plot.
-```{r plot_method function plotting measurand vs. method}
+```{r plot_method function plotting measurand vs. method, include=FALSE}
 ### function plot_method defined here. Automated plot of methods boxplots sorted by increasing method mean. Enter with plot_method=('xx') #######
 plot_method <- function(x) {
   element <- x
@@ -96,7 +84,7 @@ plot_method <- function(x) {
   p + xlab("method") + ylab("mg/kg or g/100g") + labs(title = element) + labs(colour = "Prep") + mytheme
 }
 ```
-```{r plot_lab function plot measurand vs. lab}
+```{r plot_lab function plot measurand vs. lab, include=FALSE}
 ###### function plot_lab #### 
 # defined here. Automated plot of lab boxplots sorted by increasing lab mean and Horwitz function. Enter with plot_lab=('xx')
 plot_lab <- function(x, type) {
@@ -128,7 +116,7 @@ plot_lab <- function(x, type) {
 
 #### defining the function of Youden plots
 
-```{r plot_youd functin for youden plot}
+```{r plot_youd function for youden plot, include=FALSE}
 plot_youd <- function(a, y, z) { # a = measurand, y and z ref
   '%p%' <- function(a, b) {as.character(paste (a, b, sep =""))}
   switch(
@@ -180,6 +168,26 @@ plot_youd <- function(a, y, z) { # a = measurand, y and z ref
 
 ```
 
+#### initial calculations with complete data set
+
+```{r creating means}
+## means over packets within lab 
+meanGOM <- function(x) mean(x, na.rm=TRUE) # defining a function for further calcuations
+sdGOM <- function(x) sd(x, na.rm=TRUE) # defining a function for further calcuations, here for calculating standard deviations neede for Youden plot
+meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM)) # calculated the median for each Packet within each Lab by calculating the median of days and preparations lumped together
+## median over median of packets within lab
+GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
+```
+```{r creating median}
+## median over packets within lab 
+medianGOM <- function(x) median(x, na.rm=TRUE)
+medianGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
+GOM.sd <- ddply(medianGOM.packet, c("Lab"), numcolwise(sdGOM))
+## median over median of packets within lab
+GOM.median <- ddply(medianGOM.packet, c("Lab"), numcolwise(medianGOM))
+```
+
+
 ```{r summary as is for indiviual measurand}
 summary(GOM[[measurand]], na.rm=TRUE, digits=4) # with values without outlier removal
 mean.before <- mean(GOM.mean[[measurand]], na.rm=TRUE)
@@ -189,14 +197,14 @@ The `r measurand` mean of the Lab means is **`r round(mean.before, 4)`** g/100 g
 The `r measurand` median of the Lab+Package medians is **`r round(median.before, 4)`** g/100 g  
 
 
-```{r methods and lab plot as is, fig.width=10, fig.height=4}
+```{r methods and lab plot as is, fig.width=8, fig.height=4}
 plot_method(measurand); plot_lab(measurand,'M') ## M for majors, T for traces
 ```
 ```{r fig.width=6, fig.height=6}
 plot_youd(measur, 'GAS', 'OKUM'); plot_youd(measur, 'MUH', 'OKUM')
 ```
 #### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
-```{r mandel k, fig.width=10, fig.height=6}
+```{r mandel k, fig.width=8, fig.height=6}
 k <- with(medianGOM.packet, mandel.kh(medianGOM.packet[[measurand]], g=Lab, type="k"))     
 barplot(k, las=2, col=1:4)
 ```
@@ -204,8 +212,8 @@ barplot(k, las=2, col=1:4)
 ### Outlier rejection
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
-```{r outlier removal, fig.width=10, fig.height=6}
-outlier <- c(12, 14, 31) ## defining the outlying lab here with lab#
+```{r outlier removal, fig.width=8, fig.height=6}
+outlier <- c(31, 33 ) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in seq(leng)) ##  looping
 {
@@ -292,7 +300,7 @@ plot(DF.lme)
 ```
  
 ### tests for normal distribution
-```{r QQ plot}
+```{r QQ plot, fig.width=4.5, fig.height=5}
 qqnorm(GOM.median.after[[measurand]])
 qqline(GOM.median.after[[measurand]])
 ```
@@ -325,4 +333,5 @@ The expanded standard uncertainty for the assigned value of `r measurand` is **`
 exluded labs for `r measurand` is/are `r outlier`  
 labs remaining for calculations `r p`  
 #### comments
-labs #12 and #14 based on Youden plot and PP-XRF, lab #31 removed because of bad performance Madel's k and PP-XRF
+lab #33 based on Youden plot and lab plots, labs #31 based on Mandel k  
+lab #6 is a border line problem
