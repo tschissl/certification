@@ -1,5 +1,6 @@
 Analysing submitted data for OKUM, GAS or MUH-1
 ========================================================
+Thomas Meisel (`r as.character(Sys.Date())`)  
 The data for this interlaboratory comparison based certification of property values were analysed by 36 labs following the nested design approached as proposed the IAG certification protocol. Participating labs received 3 packages of OKUM and MUH-1 respectively and one package of GAS. The latter was supplied as a "traceablility" sample and is here used for quality control purposes. It was the task of the labs to prepare two independent sample preparations (i.e. digstions) of each packet and analyse the preparations on two different days. Labs thus should have submitted 12 values (3x2x2 PacketxPrepxDay). 
 ```{r Data_prep, echo=FALSE, message=FALSE, warning=FALSE}
 # Moved this outside the document for easier reading
@@ -220,7 +221,7 @@ barplot(k, las=2, col=1:4)
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=8, fig.height=6}
-outlier <- c(23) ## defining the outlying lab here with lab#
+outlier <- c(23, 16) ## defining the outlying lab here with lab#
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in seq(leng)) ##  looping
 {
@@ -339,6 +340,12 @@ type |  before |  after outlier rejection | alternative calculation
 standard uncertainty | `r u2` | `r u1.a` | `r u2.a`
 expanded standard uncertainty |-|-| **`r u2.a*t.value`** *k* = `r round(t.value, 2)`
 
+```{r exporting the data}
+df <- data.frame(Sys.Date(), refmat, measurand.name, mean.before, mean, median.before, median.after, median.after.noPP, unit, sL2.a, sbb2.a, sr2.a, u1.a, u2.a, u2.a*t.value, t.value, outlier, p)
+# names(df) <- c("date", "RM", "measurand", "mean.before", "mean", "median.before", "median.after", "median.after.noPP", "unit", "sL2.a", "sbb2.a", "sr2.a", "u", "u.alternative", "U", "t.value", "outlier", "labs remaining") # needed only the first time
+# write.table(df, "df.txt", row.names=FALSE) # needed only the first time
+write.table(df, "df.txt", row.names=FALSE, append=TRUE, col.names=FALSE)
+```
 
 ### Final plot without outliers
 
@@ -355,6 +362,7 @@ The expanded standard uncertainty for the assigned value of `r measurand.name` i
 exluded labs for `r measurand.name` is/are `r outlier`  
 labs remaining for calculations `r p`  
 #### comments
+
 outliers:|lab#
 --------|-----
 based on Youden plots:|23
