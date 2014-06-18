@@ -8,7 +8,7 @@ The data for this interlaboratory comparison based certification of property val
 ### defining the RM and measurand to be analysed
 ```{r defining the measurand and RM}
 refmat <- 'OKUM' # defining the RM
-measurand.name <- 'Na2O' # defining the measurand
+measurand.name <- 'FeO' # defining the measurand
 ``` 
 ```{r defining the variables used for selected RM, include=FALSE}
 '%p%' <- function(a, b) {as.character(paste (a, b, sep =""))} # the measureands have different endings depending on which RM: OKUM not extention, MUH extention ".1" and GAS has the extention ".2"
@@ -60,7 +60,7 @@ ifelse(MorT == "T", unit <- 'mg/kg', unit <- 'g/100g') # testing which unit is n
 mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size = rel(2))) + theme(axis.title.x = element_text(size = rel(1.8)))+ theme(axis.title.y = element_text(size = rel(1.8))) +theme(axis.text.x = element_text(size = rel(1.5))) + theme(axis.text.y = element_text(size = rel(1.5))) + theme(legend.title = element_text(size = rel(1))) +theme(legend.text = element_text(size = rel(0.8)))
 ```
 #### defining the function for plotting methods vs. measurand mass fraction. Sample preparation methods are also marked in the plot.
-```{r plot_method function plotting measurand vs. method, include=FALSE}
+```{r plot_method function plotting measurand vs. method, include=FALSE, cache=TRUE}
 ### function plot_method defined here. Automated plot of methods boxplots sorted by increasing method median. Enter with plot_method=('xx') #######
 plot_method <- function(x) {
   element <- x
@@ -221,7 +221,9 @@ barplot(k, las=2, col=1:4)
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=8, fig.height=6}
-outlier <- c(23, 16) ## defining the outlying lab here with lab#
+# outlier <- ifelse(OKUM.measurand[[measurand.name]]=="omit", "X", OKUM.measurand[[measurand.name]]) # does not work for FeO
+# outlier <- na.omit(outlier)
+# outlier<- c(16) ## defining the outlying lab here with lab# directly. Enter 0 when no outlier
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in seq(leng)) ##  looping
 {
@@ -261,6 +263,7 @@ analyte <- na.omit(analyte)
                       median = round(median(anal), 3), 
                       sd = round(sd(anal),3), 
                       se = round(sd/sqrt(N),3))
+
 ```
 
 ## Measurement uncertainty estimations of property value
@@ -341,12 +344,18 @@ standard uncertainty | `r u2` | `r u1.a` | `r u2.a`
 expanded standard uncertainty |-|-| **`r u2.a*t.value`** *k* = `r round(t.value, 2)`
 
 ```{r exporting the data}
+outlier <- ifelse(outlier=="0", "X", outlier)
 df <- data.frame(Sys.Date(), refmat, measurand.name, mean.before, mean, median.before, median.after, median.after.noPP, unit, sL2.a, sbb2.a, sr2.a, u1.a, u2.a, u2.a*t.value, t.value, outlier, p)
 # names(df) <- c("date", "RM", "measurand", "mean.before", "mean", "median.before", "median.after", "median.after.noPP", "unit", "sL2.a", "sbb2.a", "sr2.a", "u", "u.alternative", "U", "t.value", "outlier", "labs remaining") # needed only the first time
 # write.table(df, "df.txt", row.names=FALSE) # needed only the first time
 write.table(df, "df.txt", row.names=FALSE, append=TRUE, col.names=FALSE)
 ```
-
+```{r plotting the method medians, fig.width=8, fig.height=4}
+reference.line <- median.after
+u.Ulim <- median.after + u2.a*t.value
+l.Ulim <- median.after - u2.a*t.value
+ggplot(bymethod.n, aes(x=anal.method, y=median))+geom_point(size=4)+geom_errorbar(aes(ymin=median-se, ymax=median+se), width=0.05)+ geom_abline(intercept = reference.line, slope = 0) + geom_abline(intercept = u.Ulim, slope = 0, linetype ="dotted") + geom_abline(intercept = l.Ulim, slope = 0, linetype = "dotted") + mytheme
+```
 ### Final plot without outliers
 
 ```{r fig.width=8, fig.height=4}
@@ -365,7 +374,7 @@ labs remaining for calculations `r p`
 
 outliers:|lab#
 --------|-----
-based on Youden plots:|23
+based on Youden plots:|
 based on Mandel's k performance:|
 based on PP-XRF:|
-based on detection limit:| 
+based on detection limit:|
