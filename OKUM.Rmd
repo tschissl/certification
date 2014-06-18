@@ -221,8 +221,9 @@ barplot(k, las=2, col=1:4)
 #### Removing ouliers lab based on Youden plot and Mandel's k (lab performance)
 
 ```{r outlier removal, fig.width=8, fig.height=6}
-# outlier <- ifelse(OKUM.measurand[[measurand.name]]=="omit", "X", OKUM.measurand[[measurand.name]]) # does not work for FeO
-# outlier <- na.omit(outlier)
+outlier <- OKUM.outlier[[measurand.name]]
+#outlier <- ifelse(OKUM.outlier[[measurand.name]][1]=="NA", "0", OKUM.outlier[[measurand.name]]) # does not work for FeO
+outlier <- na.omit(outlier)
 # outlier<- c(16) ## defining the outlying lab here with lab# directly. Enter 0 when no outlier
 leng <- length(outlier) ## counting the number of outliers for loop
 for(i in seq(leng)) ##  looping
@@ -368,7 +369,7 @@ print(bymethod.n)
 ### final result based on median for property value and measurement uncertainty based on variance components
 The **`r measurand.name`** median of the Lab+packet medians after outlier removal is **`r round(median.after, 4)`** `r unit`   
 The expanded standard uncertainty for the assigned value of `r measurand.name` is **`r u2.a*t.value`** with k = `r round(t.value, 2)`   
-exluded labs for `r measurand.name` is/are `r outlier`  
+excluded labs for `r measurand.name` is/are `r outlier`  
 labs remaining for calculations `r p`  
 #### comments
 
