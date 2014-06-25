@@ -5,10 +5,36 @@ The data for this interlaboratory comparison based certification of property val
 ```{r Data_prep, echo=FALSE, message=FALSE, warning=FALSE}
 # Moved this outside the document for easier reading
 ```
+#### importing the data and assigning factors
+```{r}
+source("Makefile.R")
+```
+
+```{r results='hide', include=FALSE}
+library(ggplot2) # needed for most plots in this document
+# library(devtools) #needed for "order_by"
+# install_github("plotflow", "trinker")
+library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
+library(metRology) #for mandel k and h calculations
+library(ape) # needed for varcomp (variance component) extraction
+library(nlme) # needed for lme
+require(plyr) # needed for ddply
+library(knitr)
+opts_chunk$set(dev="png",dev.args=list(type="cairo"), dpi=96)
+options(base64_images = 'inline')
+
+
+```{r looping through all measurands}
+# col <- OKUM.outlier[,c(1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79,81,83,85,87,79,91,93,95,97,99,101,103,105,107,109)]
+#col <- OKUM.outlier[,c(1,3,5)]
+#col.names <- colnames(col)
+#for (m in col.names) {
+#  measurand.name <- m}
+```
 ### defining the RM and measurand to be analysed
 ```{r defining the measurand and RM}
 refmat <- 'OKUM' # defining the RM
-measurand.name <- 'FeO' # defining the measurand
+measurand.name <- 'Zr' # defining the measurand
 ``` 
 ```{r defining the variables used for selected RM, include=FALSE}
 '%p%' <- function(a, b) {as.character(paste (a, b, sep =""))} # the measureands have different endings depending on which RM: OKUM not extention, MUH extention ".1" and GAS has the extention ".2"
@@ -26,29 +52,13 @@ switch(
   }
 ```
 
+
 # measurand selected `r measurand.name` for candiate reference material `r refmat`
-
-
-#### importing the data and assigning factors
-
-```{r results='hide', include=FALSE}
-library(ggplot2) # needed for most plots in this document
-# library(devtools) #needed for "order_by"
-# install_github("plotflow", "trinker")
-library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
-library(metRology) #for mandel k and h calculations
-library(ape) # needed for varcomp (variance component) extraction
-library(nlme) # needed for lme
-require(plyr) # needed for ddply
-library(knitr)
-opts_chunk$set(dev="png",dev.args=list(type="cairo"), dpi=96)
-options(base64_images = 'inline')
-
 
 # Data for certification project were gathered and joined in Excel. The files were exported from Excel as xxxx.csv files to make the universially readable. For this markdown the data is stored in the "root/documents" directory.
 # Data is loaded ("GOMGather1.R"") and merged ("GOMMerge.R") for GAS, OKUM and MUH-1 are merged together with a methods file ("OKUM.method") into a universal data.frame file named 'GOM'. All of this happens in the "Makefile.R"
 
-source("Makefile.R")
+```{r defining if measurand Major or Trace element}
 MorT <- grep(measurand.name, colnames(GOM), fixed=TRUE) # finding the position of the measurand.name in the Columnheaders of dataframe
 ifelse(MorT[1]< 21, MorT <- 'M', MorT<-'T') # testing if measurand is a major or trace element/compound (col:5-20 majors)
 ifelse(MorT == "T", unit <- 'mg/kg', unit <- 'g/100g') # testing which unit is needed
@@ -205,11 +215,18 @@ plot_lab <- function(x, type, horw = FALSE, u = FALSE) {
 }
 ```
 
-```{r methods and lab plot as is, fig.width=8, fig.height=4}
-plot_method(measurand); plot_lab(measurand, MorT, horw=TRUE, u =FALSE) 
+```{r plot methods, fig.width=8, fig.height=4}
+plot_method(measurand) 
+```
+```{r plot lab plot as is, fig.width=8, fig.height=4}
+plot_lab(measurand, MorT, horw=TRUE, u =FALSE) 
+```
+
+```{r fig.width=6, fig.height=6}
+plot_youd(measurand.name, 'GAS', 'OKUM')
 ```
 ```{r fig.width=6, fig.height=6}
-plot_youd(measurand.name, 'GAS', 'OKUM'); plot_youd(measurand.name, 'MUH', 'OKUM')
+plot_youd(measurand.name, 'MUH', 'OKUM')
 ```
 #### Mandel k barplot displays the within lab performance relative to all participating labs using the median over packages
 ```{r mandel k, fig.width=8, fig.height=6}
@@ -357,7 +374,7 @@ u.Ulim <- median.after + u2.a*t.value
 l.Ulim <- median.after - u2.a*t.value
 ggplot(bymethod.n, aes(x=anal.method, y=median))+geom_point(size=4)+geom_errorbar(aes(ymin=median-se, ymax=median+se), width=0.05)+ geom_abline(intercept = reference.line, slope = 0) + geom_abline(intercept = u.Ulim, slope = 0, linetype ="dotted") + geom_abline(intercept = l.Ulim, slope = 0, linetype = "dotted") + mytheme
 ```
-### Final plot without outliers
+### Final plot without outliers with u and U
 
 ```{r fig.width=8, fig.height=4}
 plot_lab(measurand, MorT, horw = FALSE, u = TRUE)
@@ -372,10 +389,23 @@ The expanded standard uncertainty for the assigned value of `r measurand.name` i
 excluded labs for `r measurand.name` is/are `r outlier`  
 labs remaining for calculations `r p`  
 #### comments
+```{r for output, include=FALSE }
+outlier.type.name <- measurand.name %p% ".outlier.type"
+out.measurand <- data.frame(OKUM.outlier[[measurand.name]], OKUM.outlier[[outlier.type.name]])
+# out.measurand <- cbind(OKUM.outlier[[measurand.name]], OKUM.outlier[[outlier.type.name]])
+names(out.measurand) <- c("outlier.lab","outlier.type" )
+outY <- subset(out.measurand, outlier.type =="Y", select= c(outlier.lab))
+outY <- outY$outlier.lab
+outM <- subset(out.measurand, outlier.type =="M", select= c(outlier.lab))
+outM <- outM$outlier.lab
+outP <- subset(out.measurand, outlier.type =="P", select= c(outlier.lab))
+outP <- outP$outlier.lab
+```
+
 
 outliers:|lab#
 --------|-----
-based on Youden plots:|
-based on Mandel's k performance:|
-based on PP-XRF:|
+based on Youden plots:|`r outY`
+based on Mandel's k performance:|`r outM`
+based on PP-XRF:|`r outP`
 based on detection limit:|
