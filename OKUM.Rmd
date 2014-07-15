@@ -12,13 +12,13 @@ source("Makefile.R")
 
 ```{r results='hide', include=FALSE}
 library(ggplot2) # needed for most plots in this document
-# library(devtools) #needed for "order_by"
-# install_github("plotflow", "trinker")
+#library(devtools) #needed for "order_by"
+#install_github("plotflow", "trinker")
 library(plotflow) #needed for "order_by" # install_github("plotflow", "trinker")
 library(metRology) #for mandel k and h calculations
 library(ape) # needed for varcomp (variance component) extraction
 library(nlme) # needed for lme
-require(plyr) # needed for ddply
+library(plyr) # needed for ddply
 library(knitr)
 opts_chunk$set(dev="png",dev.args=list(type="cairo"), dpi=96)
 options(base64_images = 'inline')
@@ -28,7 +28,7 @@ options(base64_images = 'inline')
 ### defining the RM and measurand to be analysed
 ```{r defining the measurand and RM}
 refmat <- 'OKUM' # defining the RM
-measurand.name <- 'TiO2' # defining the measurand
+measurand.name <- 'Ba' # defining the measurand
 ``` 
 ```{r defining the variables used for selected RM, include=FALSE}
 '%p%' <- function(a, b) {as.character(paste (a, b, sep =""))} # the measureands have different endings depending on which RM: OKUM not extention, MUH extention ".1" and GAS has the extention ".2"
@@ -48,9 +48,11 @@ switch(
 
 
 # measurand selected `r measurand.name` for candiate reference material `r refmat`
-
+```{r general comments}
 # Data for certification project was gathered and joined in Excel. The files were exported from Excel as xxxx.csv files to make them universially readable. For this markdown the data is stored in the "root/documents" directory.
 # Data is loaded ("GOMGather1.R") and merged ("GOMMerge.R") for GAS, OKUM and MUH-1 are merged together with a methods file ("OKUM.method") into a universal data.frame file named 'GOM'. All of this happens in the "Makefile.R"
+```
+
 
 ```{r defining if measurand Major or Trace element}
 MorT <- grep(measurand.name, colnames(GOM), fixed=TRUE) # finding the position of the measurand.name in the Columnheaders of dataframe
@@ -144,17 +146,17 @@ plot_youd <- function(a, y, z) { # a = measurand, y and z ref
 ## means over packets within lab 
 meanGOM <- function(x) mean(x, na.rm=TRUE) # defining a function for further calcuations
 sdGOM <- function(x) sd(x, na.rm=TRUE) # defining a function for further calcuations, here for calculating standard deviations neede for Youden plot
-meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM)) # calculated the median for each Packet within each Lab by calculating the median of days and preparations lumped together
-## median over median of packets within lab
+meanGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(meanGOM)) # calculated the mean for each Packet within each Lab by calculating the mean of days and preparations lumped together
+## mean over mean of packets within lab
 GOM.mean <- ddply(meanGOM.packet, c("Lab"), numcolwise(meanGOM))
 ```
 ```{r creating median}
 ## median over packets within lab 
-medianGOM <- function(x) median(x, na.rm=TRUE)
+medianGOM <- function(x) median(x, na.rm=TRUE) # defining a function for further calcuations
 medianGOM.packet <- ddply(GOM, c("Lab", "Packet"), numcolwise(medianGOM))
 GOM.sd <- ddply(medianGOM.packet, c("Lab"), numcolwise(sdGOM))
 ## median over median of packets within lab
-GOM.median <- ddply(medianGOM.packet, c("Lab"), numcolwise(medianGOM))
+GOM.median <- ddply(medianGOM.packet, c("Lab"), numcolwise(medianGOM))# calculated the median for each Packet within each Lab by calculating the median of days and preparations lumped together
 GOM.median <- merge(GOM.median, OKUM.methods, by="Lab")
 ```
 ```{r summary as is for indiviual measurand}
@@ -378,8 +380,8 @@ plot_lab(measurand, MorT, horw = FALSE, u = TRUE)
 print(bymethod.n)
 ```
 ```{r for output, include=FALSE }
-outlier.type.name <- measurand.name %p% ".outlier.type"
-outlier.dist.type <- measurand.name %p% ".dist.type"
+outlier.type.name <- measurand.name %p% ".outlier.type" # defining if outlier is selected ("Y" or NA)
+outlier.dist.type <- measurand.name %p% ".dist.type" # defining if outlier is based on Y = Youden plot, M = Madel's k, P = pressed powder pellet, D = detection limit 
 out.measurand <- data.frame(OKUM.outlier[[measurand.name]], OKUM.outlier[[outlier.type.name]], OKUM.outlier[[outlier.dist.type]])
 # out.measurand <- cbind(OKUM.outlier[[measurand.name]], OKUM.outlier[[outlier.type.name]])
 names(out.measurand) <- c("outlier.lab","outlier.type", "outlier.dist" )
@@ -391,6 +393,8 @@ outM <- subset(out.measurand, outlier.type =="M", select= c(outlier.lab))
 outM <- outM$outlier.lab
 outP <- subset(out.measurand, outlier.type =="P", select= c(outlier.lab))
 outP <- outP$outlier.lab
+outD <- subset(out.measurand, outlier.type =="D", select= c(outlier.lab))
+outD <- outD$outlier.lab
 ```
 
 
@@ -407,29 +411,4 @@ outliers:|lab#
 based on Youden plots:|`r outY`
 based on Mandel's k performance:|`r outM`
 based on PP-XRF:|`r outP`
-based on detection limit:| 
-
-```{r plot all methods, fig.width=8, fig.height=4, fig.keep='all'}
-sequence <- seq(from = 1, to = length(names(OKUM.outlier)), by = 3)
-col <- OKUM.outlier[,c(sequence)]
-col.names <- colnames(col)
-for (m in col.names) {
-  measurand.name <- m
-  switch(
-    refmat,
-    GAS = rm1 <- 2,
-    MUH = rm1 <- 1,
-    OKUM = rm1 <- 0
-  )
-  if(rm1 > 0) 
-  {measurand <- measurand.name %p% '.' %p% rm1
-  } else 
-  {
-    measurand <- measurand.name
-  }
-  MorT <- grep(measurand.name, colnames(GOM), fixed=TRUE) # finding the position of the measurand.name in the Columnheaders of data frame GOM
-  ifelse(MorT[1]< 21, MorT <- 'M', MorT<-'T') # testing if measurand is a major or trace element/compound (col:5-20 majors)
-  ifelse(MorT == "T", unit <- 'mg/kg', unit <- 'g/100g') # testing which unit is needed  
-  print(plot_method(measurand))
-        }
-```
+based on detection limit:| `r outD`
