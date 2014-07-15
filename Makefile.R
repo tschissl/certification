@@ -6,7 +6,7 @@
 ############################
 
 # Set working directory
-setwd("C:/Daten/projects/R/certification/")
+setwd("~/GitHub/certification/")
 
 # Gather and clean up csv data files which have been prepared in EXCEL
 source("GOMGather1.R")

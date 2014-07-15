@@ -3,7 +3,8 @@ title: "OKUM Certification"
 author: "TCM"
 date: "Tuesday, July 15, 2014"
 output:
-  word_document: default
+  html_document: default
+  pdf_document: default
 ---
 
 Analysing submitted data for OKUM, GAS or MUH-1
@@ -60,7 +61,7 @@ switch(
 
 
 # measurand selected `r measurand.name` for candiate reference material `r refmat`
-```{r general comments}
+```{r general comments, tidy.opts=list(keep.blank.line=FALSE, width.cutoff=60)}
 # Data for certification project was gathered and joined in Excel. The files were exported from Excel as xxxx.csv files to make them universially readable. For this markdown the data is stored in the "root/documents" directory.
 # Data is loaded ("GOMGather1.R") and merged ("GOMMerge.R") for GAS, OKUM and MUH-1 are merged together with a methods file ("OKUM.method") into a universal data.frame file named 'GOM'. All of this happens in the "Makefile.R"
 ```
