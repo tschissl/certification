@@ -1,7 +1,19 @@
+---
+title: "OKUM Certification"
+author: "TCM"
+date: "Tuesday, July 15, 2014"
+output:
+  word_document: default
+---
+
 Analysing submitted data for OKUM, GAS or MUH-1
 ========================================================
 Thomas Meisel (`r as.character(Sys.Date())`)  
 The data for this interlaboratory comparison based certification of property values were analysed by 36 labs following the nested design approached as proposed the IAG certification protocol. Participating labs received 3 packages of OKUM and MUH-1 respectively and one package of GAS. The latter was supplied as a "traceablility" sample and is here used for quality control purposes. It was the task of the labs to prepare two independent sample preparations (i.e. digstions) of each packet and analyse the preparations on two different days. Labs thus should have submitted 12 values (3x2x2 PacketxPrepxDay). 
+important notice: 
+.RProfile was originally taken from http://gforge.se/2014/01/fast-track-publishing-using-knitr-part-ii/
+but does not work with the RStudio verion 0.98.976 as PDF option does not show up
+
 ```{r Data_prep, echo=FALSE, message=FALSE, warning=FALSE}
 # Moved this outside the document for easier reading
 ```
@@ -66,7 +78,7 @@ ifelse(MorT == "T", unit <- 'mg/kg', unit <- 'g/100g') # testing which unit is n
 mytheme <- theme_grey() + theme(plot.title = element_text(colour = "black", size = rel(2))) + theme(axis.title.x = element_text(size = rel(1.8)))+ theme(axis.title.y = element_text(size = rel(1.8))) +theme(axis.text.x = element_text(size = rel(1.5))) + theme(axis.text.y = element_text(size = rel(1.5))) + theme(legend.title = element_text(size = rel(1))) +theme(legend.text = element_text(size = rel(0.8)))
 ```
 #### defining the function for plotting methods vs. measurand mass fraction. Sample preparation methods are also marked in the plot.
-```{r plot_method function plotting measurand vs. method, include=FALSE, cache=TRUE}
+```{r plot_method function plotting measurand vs. method, include=FALSE}
 ### function plot_method defined here. Automated plot of methods boxplots sorted by increasing method median. Enter with plot_method=('xx') #######
 plot_method <- function(x) {
   element <- x
@@ -403,12 +415,23 @@ The **`r measurand.name`** `r property.value.dist.type` of the Lab+packet `r pro
 The expanded standard uncertainty for the assigned value of `r measurand.name` is **`r u2.a*t.value`** with k = `r round(t.value, 2)`   
 excluded labs for `r measurand.name` is/are `r outlier`  
 labs remaining for calculations `r p`  
-#### comments
 
+###comments
 
-outliers:|lab#
---------|-----
-based on Youden plots:|`r outY`
-based on Mandel's k performance:|`r outM`
-based on PP-XRF:|`r outP`
-based on detection limit:| `r outD`
+outlier type |  lab# 
+:----| :------- 
+based on Youden plots: |`r outY`  
+based on Mandel's k performance:|`r outM`  
+based on PP-XRF:|`r outP`  
+based on detection limit:| `r outD`  
+
+### comments
+outlier type |  lab# 
+:----| :------- | :----------- | :--------
+based on Youden plots: | `r outY`
+based on Mandel's k performance: | `r outY`
+based on PP-XRF: | `r outY`
+
+```{r sessionInfo, include=TRUE, echo=TRUE, results='markup'}
+sessionInfo()
+```

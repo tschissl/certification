@@ -327,11 +327,12 @@ final <- ddply(df1, c("date","RM","measurand","based.on"), numcolwise(meanGOM))
 #### final
 
 ```{r all data table, results='asis'} 
-# kable(head(final), format = "markdown", digits = 4)
+kable(head(final), format = "markdown", digits = 4)
 library(xtable)
-print(xtable(final), type="html")
-library(Gmisc)
-htmlTable(final)
+xt <- xtable(final, digits=c(0, 0,0,0,0,3,3,3,3,3,3,3,3,3,3,2,0,0,3,3))
+print(xt, type="html")
+#library(Gmisc)
+# htmlTable(final)
 ```
 
 ```{r certified values with U}
@@ -345,5 +346,7 @@ write.table(CV3, "CV2.txt", row.names=FALSE, append=TRUE, col.names=FALSE) #CV a
 htmlTable(CV3)
 print(xtable(CV3), type="html")
 ```
-
+```{r sessionInfo, include=TRUE, echo=TRUE, results='markup'}
+sessionInfo()
+```
  
